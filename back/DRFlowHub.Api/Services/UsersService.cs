@@ -26,6 +26,7 @@ namespace DRFlowHub.Api.Services
                 Role = u.Role,
                 Departamento = u.Departamento,
                 Cargo = u.Cargo,
+                Ativo = u.Ativo,
                 UnidadeId = u.UnidadeId,
                 UnidadeNome = u.Unidade != null ? u.Unidade.Nome : string.Empty,
                 DataNascimento = u.DataNascimento
@@ -36,7 +37,7 @@ namespace DRFlowHub.Api.Services
         {
             IQueryable<Users> user = _repo.Query().Include(u => u.Unidade);
 
-            if (RoleScope.IsAdmin(role) || RoleScope.IsTI(role) || RoleScope.IsRH(role))
+            if (RoleScope.IsAdmin(role) || RoleScope.IsTI(role))
                 return MapUsers(user);
 
             user = user.Where(u => u.Email == email);
@@ -87,6 +88,7 @@ namespace DRFlowHub.Api.Services
             user.Role = AuthService.NormalizeRole(dto.Role);
             user.Departamento = dto.Departamento.Trim();
             user.Cargo = dto.Cargo.Trim();
+            user.Ativo = dto.Ativo;
             user.UnidadeId = AuthService.ShouldRequireUnidade(dto.Role) ? dto.UnidadeId : null;
             user.DataNascimento = dto.DataNascimento;
 

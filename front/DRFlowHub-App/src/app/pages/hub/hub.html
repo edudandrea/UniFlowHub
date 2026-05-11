@@ -1,0 +1,153 @@
+<main class="hub-layout">
+  <section class="dashboard-shell">
+    <header class="topbar">
+      <div>
+        <p class="system-name">Painel pós-login</p>
+        <h1>{{ dashboardTitle() }}</h1>
+      </div>
+
+      <div class="user-box profile-area">
+        <label class="theme-picker">
+          Tema
+          <select [value]="theme.current()" (change)="theme.setTheme($any($event.target).value)">
+            @for (option of theme.options; track option.value) {
+              <option [value]="option.value">{{ option.label }}</option>
+            }
+          </select>
+        </label>
+
+        <button class="profile-trigger" type="button" (click)="profileMenuOpen.set(!profileMenuOpen())">
+          <span>{{ user()?.nome }}</span>
+          <strong>{{ user()?.role }}</strong>
+        </button>
+
+        @if (profileMenuOpen()) {
+          <div class="profile-menu">
+            <button type="button" (click)="editProfile()">Editar perfil</button>
+            <button type="button" (click)="changePassword()">Trocar senha</button>
+            <button type="button" (click)="logout()">Sair</button>
+          </div>
+        }
+      </div>
+    </header>
+
+    <section class="dashboard-intro">
+      <div>
+        <p class="system-name">{{ user()?.departamento || 'Setor' }}</p>
+        <h2>{{ dashboardSubtitle() }}</h2>
+      </div>
+      <button class="refresh-button" type="button" (click)="loadDashboard()" [disabled]="loading()">
+        {{ loading() ? 'Atualizando...' : 'Atualizar' }}
+      </button>
+    </section>
+
+    @if (isBirthdayToday()) {
+      <section class="birthday-banner" aria-label="Mensagem de aniversario">
+        <div>
+          <p class="system-name">Hoje e seu dia</p>
+          <h2>{{ birthdayGreeting() }}</h2>
+        </div>
+        <span>Parabens!</span>
+      </section>
+    }
+
+    <section class="metrics-grid" aria-label="Indicadores do setor">
+      @for (metric of metrics(); track metric.label) {
+        <article
+          class="metric-card"
+          [class.attention]="metric.tone === 'attention'"
+          [class.danger]="metric.tone === 'danger'"
+          [class.success]="metric.tone === 'success'"
+          [class.neutral]="metric.tone === 'neutral'"
+        >
+          <span>{{ metric.label }}</span>
+          <strong>{{ metric.value }}</strong>
+          <p>{{ metric.detail }}</p>
+        </article>
+      }
+    </section>
+
+    <section class="dashboard-grid">
+      <article class="panel alerts-panel">
+        <header>
+          <div>
+            <p class="system-name">Alertas</p>
+            <h2>Solicitações que precisam de atenção</h2>
+          </div>
+        </header>
+
+        @if (alerts().length) {
+          <div class="alert-list">
+            @for (alert of alerts(); track alert.id) {
+              <button class="alert-row" type="button" (click)="openAlert(alert)">
+                <span class="sector-pill">{{ alert.sector }}</span>
+                <div>
+                  <strong>{{ alert.title }}</strong>
+                  <p>{{ alert.detail }}</p>
+                </div>
+                <span class="status-pill">{{ alert.status }}</span>
+                <span class="priority-pill">{{ alert.priority }}</span>
+              </button>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <strong>Nenhum alerta crítico agora.</strong>
+            <p>As solicitações carregadas nao possuem pendências priorizadas para este perfil.</p>
+          </div>
+        }
+      </article>
+
+      <article class="panel actions-panel">
+        <header>
+          <div>
+            <p class="system-name">Ações</p>
+            <h2>Atalhos do perfil</h2>
+          </div>
+        </header>
+
+        <div class="action-list">
+          @for (action of actions(); track action.label) {
+            <button type="button" [class.disabled]="!action.enabled" (click)="openAction(action)">
+              <strong>{{ action.label }}</strong>
+              <span>{{ action.description }}</span>
+            </button>
+          }
+        </div>
+      </article>
+
+      @if (showBirthdays()) {
+        <article class="panel birthday-panel">
+          <header>
+            <div>
+              <p class="system-name">Aniversariantes</p>
+              <h2>Aniversariantes do mes</h2>
+            </div>
+          </header>
+
+          @if (monthBirthdays().length) {
+            <div class="birthday-list">
+              @for (birthday of monthBirthdays(); track birthday.id) {
+                <article class="birthday-row" [class.today]="birthday.isToday">
+                  <span>{{ birthday.day.toString().padStart(2, '0') }}</span>
+                  <div>
+                    <strong>{{ birthday.nome }}</strong>
+                    <p>{{ birthday.departamento || 'Sem departamento' }} - {{ birthday.cargo || 'Sem cargo' }}</p>
+                  </div>
+                  @if (birthday.isToday) {
+                    <em>Hoje</em>
+                  }
+                </article>
+              }
+            </div>
+          } @else {
+            <div class="empty-state">
+              <strong>Nenhum aniversario neste mes.</strong>
+              <p>Quando houver aniversariantes, eles aparecem aqui para o RH acompanhar.</p>
+            </div>
+          }
+        </article>
+      }
+    </section>
+  </section>
+</main>

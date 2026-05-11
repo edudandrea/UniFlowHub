@@ -9,7 +9,16 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 using System.Text;
 
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
+var migrateMode = args.Any(arg => string.Equals(arg, "--migrate", StringComparison.OrdinalIgnoreCase));
+
+if (migrateMode)
+{
+    builder.Logging.ClearProviders();
+    builder.Logging.AddSimpleConsole();
+}
 
 // 🔹 Controllers
 builder.Services.AddControllers();
@@ -58,7 +67,7 @@ builder.Services.AddSwaggerGen(options =>
 builder.Services.AddHttpContextAccessor();
 
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
@@ -94,6 +103,14 @@ builder.Services.AddScoped<UnidadesService>();
 builder.Services.AddScoped<AuthService>();
 
 var app = builder.Build();
+
+if (migrateMode)
+{
+    using var scope = app.Services.CreateScope();
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+    return;
+}
 
 // 🔹 Swagger (sempre ativo - pode limitar só para dev se quiser)
 if (app.Environment.IsDevelopment())

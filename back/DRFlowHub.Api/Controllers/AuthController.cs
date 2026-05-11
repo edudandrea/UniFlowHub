@@ -23,7 +23,14 @@ namespace DRFlowHub.Api.Controllers
         [AllowAnonymous]
         public IActionResult Login([FromBody] LoginRequestDto dto)
         {
-            return Ok(_service.Login(dto));
+            try
+            {
+                return Ok(_service.Login(dto));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(ex.Message);
+            }
         }
 
         [HttpPost("register")]
@@ -31,7 +38,7 @@ namespace DRFlowHub.Api.Controllers
         public IActionResult Register([FromBody] UserCreateDto dto)
         {
             var hasAnyUser = _service.HasAnyUser();
-            if (hasAnyUser && !UserHasRole("Admin") && !UserHasRole("RH"))
+            if (hasAnyUser && !UserHasRole("Admin") && !UserHasRole("TI"))
                 return Forbid();
 
             var currentUserId = GetCurrentUserId();

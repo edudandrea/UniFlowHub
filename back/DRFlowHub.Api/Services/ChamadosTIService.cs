@@ -19,7 +19,9 @@ namespace DRFlowHub.Api.Services
 
         public List<ChamadoTIResponseDto> List(string role, int userId)
         {
-            var query = _repo.Query().AsNoTracking();
+            IQueryable<ChamadosTI> query = _repo.Query()
+                .AsNoTracking()
+                .Include(s => s.Comunicacoes);
 
             if (!CanManage(role))
                 query = query.Where(s => s.Userid == userId);
@@ -276,8 +278,33 @@ namespace DRFlowHub.Api.Services
                 DataPrimeiroEncerramento = s.DataPrimeiroEncerramento,
                 DataReabertura = s.DataReabertura,
                 DataEncerramento = s.DataEncerramento,
+                UltimaMovimentacao = GetUltimaMovimentacao(s),
                 Reaberto = s.Reaberto
             };
+        }
+
+        private static DateTime GetUltimaMovimentacao(ChamadosTI chamado)
+        {
+            var ultima = chamado.DataAbertura;
+
+            if (chamado.DataReabertura.HasValue && chamado.DataReabertura.Value > ultima)
+                ultima = chamado.DataReabertura.Value;
+
+            if (chamado.DataEncerramento.HasValue && chamado.DataEncerramento.Value > ultima)
+                ultima = chamado.DataEncerramento.Value;
+
+            if (chamado.DataAvaliacao.HasValue && chamado.DataAvaliacao.Value > ultima)
+                ultima = chamado.DataAvaliacao.Value;
+
+            var ultimaComunicacao = chamado.Comunicacoes
+                .OrderByDescending(c => c.DataCriacao)
+                .Select(c => (DateTime?)c.DataCriacao)
+                .FirstOrDefault();
+
+            if (ultimaComunicacao.HasValue && ultimaComunicacao.Value > ultima)
+                ultima = ultimaComunicacao.Value;
+
+            return ultima;
         }
 
         private ChamadosTI GetAccessibleChamado(int id, string role, int currentUserId, bool asNoTracking = false)

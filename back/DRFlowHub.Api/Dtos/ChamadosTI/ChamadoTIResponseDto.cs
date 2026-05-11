@@ -24,6 +24,7 @@ namespace DRFlowHub.Api.Dtos.ChamadosTI
         public DateTime? DataPrimeiroEncerramento { get; set; }
         public DateTime? DataReabertura { get; set; }
         public DateTime? DataEncerramento { get; set; }
+        public DateTime UltimaMovimentacao { get; set; }
         public bool Reaberto { get; set; }
         public int Userid { get; set; }
     }

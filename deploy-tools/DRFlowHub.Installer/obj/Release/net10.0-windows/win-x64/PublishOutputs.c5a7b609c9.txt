@@ -1,0 +1,2 @@
+D:\Dev\DRFlowHub\deploy-tools\installer-publish\Install-DRFlowHub-GUI.pdb
+D:\Dev\DRFlowHub\deploy-tools\installer-publish\Install-DRFlowHub-GUI.exe

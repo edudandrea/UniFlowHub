@@ -24,10 +24,13 @@ namespace DRFlowHub.Api.Services
 
         public LoginResponseDto Login(LoginRequestDto dto)
         {
-            var user = _repo.GetByLogin(dto.Email.Trim());
+            var user = _repo.GetByLogin(dto.Email.Trim().ToLowerInvariant());
 
             if (user is null || !PasswordHasher.Verify(dto.Senha, user.Senha))
                 throw new UnauthorizedAccessException("Email ou senha invalidos.");
+
+            if (!user.Ativo)
+                throw new UnauthorizedAccessException("Usuario inativo. Contate o administrador.");
 
             return CreateLoginResponse(user);
         }
@@ -52,6 +55,7 @@ namespace DRFlowHub.Api.Services
                 Role = NormalizeRole(dto.Role),
                 Departamento = dto.Departamento.Trim(),
                 Cargo = dto.Cargo.Trim(),
+                Ativo = dto.Ativo,
                 UnidadeId = ShouldRequireUnidade(dto.Role) ? dto.UnidadeId : null,
                 DataNascimento = dto.DataNascimento,
                 CreatedByUserId = createdByUserId
@@ -162,6 +166,7 @@ namespace DRFlowHub.Api.Services
                 Role = NormalizeRole(user.Role),
                 Departamento = user.Departamento,
                 Cargo = user.Cargo,
+                Ativo = user.Ativo,
                 UnidadeId = user.UnidadeId,
                 UnidadeNome = user.Unidade?.Nome ?? string.Empty,
                 DataNascimento = user.DataNascimento
