@@ -63,7 +63,6 @@ h2 {
   color: var(--color-brand-blue);
   font-size: 12px;
   font-weight: 800;
-  letter-spacing: 0.08em;
   text-transform: uppercase;
 }
 
@@ -88,21 +87,17 @@ h2 {
 
 .filters {
   align-items: stretch;
-  flex-direction: column;
-  gap: 18px;
+  justify-content: space-between;
+  gap: 28px;
   padding-block: 24px;
 }
 
-.filters > div {
-  text-align: center;
-}
-
-.filter-row,
-.date-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-  justify-content: center;
+.filter-copy {
+  display: grid;
+  align-content: center;
+  flex: 1 1 360px;
+  max-width: 620px;
+  text-align: left;
 }
 
 .filters span,
@@ -153,7 +148,6 @@ input {
 }
 
 .filters .secondary {
-  align-self: end;
   background: var(--color-button-bg);
   color: var(--color-button-text);
 }
@@ -260,8 +254,9 @@ input {
 }
 
 .metrics strong {
+  word-break: break-all;
   color: var(--color-brand-blue);
-  font-size: clamp(20px,2.2vw,30px);
+  font-size: clamp(18px, 1.7vw, 30px);
 }
 
 .bi-grid {

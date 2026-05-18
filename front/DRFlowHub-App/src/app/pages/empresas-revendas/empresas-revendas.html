@@ -1,8 +1,33 @@
 <main class="company-shell">
-  <header>
-    <div>
-      <p>Cadastros</p>
-      <h1>Empresas e revendas</h1>
+  <header class="standard-topbar">
+    <button class="brand-heading" type="button" (click)="goHome()" aria-label="Ir para a tela inicial">
+      <img src="/drsul-logo.svg" alt="Grupo DRSUL" />
+      <div>
+        <p class="system-name">DRFlowHub</p>
+        <h1>Empresas e Revendas</h1>
+      </div>
+    </button>
+
+    <div class="user-box profile-area">
+      <label class="theme-picker">
+        Tema
+        <select [value]="theme.current()" (change)="theme.setTheme($any($event.target).value)">
+          @for (option of theme.options; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <button class="profile-trigger" type="button" (click)="profileMenuOpen.set(!profileMenuOpen())">
+        <span>{{ user()?.nome }}</span>
+        <strong>{{ user()?.role }}</strong>
+      </button>
+      @if (profileMenuOpen()) {
+        <div class="profile-menu">
+          <button type="button" (click)="editProfile()">Editar perfil</button>
+          <button type="button" (click)="changePassword()">Trocar senha</button>
+          <button type="button" (click)="logout()">Sair</button>
+        </div>
+      }
     </div>
   </header>
 
@@ -10,46 +35,44 @@
     <article class="panel">
       <div class="panel-title">
         <div>
-          <h2>Empresas cadastradas</h2>
+          <h2>Arvore de empresas</h2>
           <span>{{ empresas().length }} registros</span>
         </div>
-        <button type="button" (click)="novaEmpresa()">Nova empresa</button>
+        <button type="button" (click)="novaEmpresa()">Nova Empresa</button>
       </div>
 
-      <div class="item-list">
-        @for (empresa of empresas(); track empresa.id) {
-          <button class="record-card" type="button" (click)="editEmpresa(empresa)">
-            <span class="code">{{ empresa.numero }}</span>
-            <strong>{{ empresa.nome }}</strong>
-            <small>Clique para editar</small>
-          </button>
+      <div class="company-tree">
+        @for (node of empresaTree(); track node.empresa.id) {
+          <section class="company-node" [class.active]="expandedEmpresaId() === node.empresa.id">
+            <div class="company-row">
+              <button class="record-card" type="button" (click)="selectEmpresa(node.empresa)">
+                <span class="code">{{ node.empresa.numero }}</span>
+                <strong>{{ node.empresa.nome }}</strong>
+                <small>{{ node.revendas.length }} revenda(s) cadastrada(s)</small>
+              </button>
+              <button class="secondary action-button" type="button" (click)="editEmpresa(node.empresa)">Editar</button>
+            </div>
+            @if (expandedEmpresaId() === node.empresa.id) {
+              <div class="branch-list">
+                @for (revenda of node.revendas; track revenda.id) {
+                  <button class="branch-card" type="button" (click)="editRevenda(revenda)">
+                    <span>{{ node.empresa.numero }}/{{ revenda.numeroRevenda }}</span>
+                    <strong>{{ revenda.revenda }}</strong>
+                    <small>{{ revenda.cnpj }}</small>
+                  </button>
+                } @empty {
+                  <p class="empty">Nenhuma revenda cadastrada para esta empresa.</p>
+                }
+                <button class="branch-add" type="button" (click)="novaRevenda(node.empresa.id)">Nova Revenda</button>
+              </div>
+            }
+          </section>
         } @empty {
           <p class="empty">Nenhuma empresa cadastrada.</p>
         }
       </div>
     </article>
 
-    <article class="panel">
-      <div class="panel-title">
-        <div>
-          <h2>Revendas cadastradas</h2>
-          <span>{{ revendas().length }} registros</span>
-        </div>
-        <button type="button" (click)="novaRevenda()">Nova revenda</button>
-      </div>
-
-      <div class="item-list">
-        @for (revenda of revendas(); track revenda.id) {
-          <button class="record-card" type="button" (click)="editRevenda(revenda)">
-            <span class="code">{{ revenda.empresaNumero }} / {{ revenda.numeroRevenda }}</span>
-            <strong>{{ revenda.revenda }}</strong>
-            <small>{{ revenda.empresa }} - {{ revenda.cnpj }}</small>
-          </button>
-        } @empty {
-          <p class="empty">Nenhuma revenda cadastrada.</p>
-        }
-      </div>
-    </article>
   </section>
 
   @if (empresaModalOpen()) {
@@ -94,7 +117,7 @@
               }
             </select>
           </label>
-          <label>Codigo revenda <input type="number" formControlName="numeroRevenda" /></label>
+          <label>Código Revenda <input type="number" formControlName="numeroRevenda" /></label>
           <label>Revenda <input formControlName="revenda" /></label>
           <label>CNPJ <input formControlName="cnpj" /></label>
           <label class="wide">Endereco <textarea formControlName="endereco" rows="3"></textarea></label>

@@ -41,12 +41,12 @@ namespace DRFlowHub.Api.Services
         public UserResponseDto CreateUser(UserCreateDto dto, int? createdByUserId)
         {
             dto.Role = NormalizeRole(dto.Role);
-            if (!ShouldRequireUnidade(dto.Role))
-                dto.UnidadeId = null;
+            dto.UnidadeId = NormalizeUnidadeId(dto.UnidadeId);
 
             ValidateUser(dto.Nome, dto.Cpf, dto.Email, dto.Senha, dto.Role);
             ValidateConfiguredRole(dto.Role);
             ValidateUnidadeForRole(dto.Role, dto.UnidadeId);
+            ValidateUnidadeExists(dto.UnidadeId);
 
             if (_repo.Query().Any(u => u.Email == dto.Email.Trim()))
                 throw new InvalidOperationException("Ja existe um usuario com este email.");
@@ -64,7 +64,7 @@ namespace DRFlowHub.Api.Services
                 Departamento = dto.Departamento.Trim(),
                 Cargo = dto.Cargo.Trim(),
                 Ativo = dto.Ativo,
-                UnidadeId = ShouldRequireUnidade(dto.Role) ? dto.UnidadeId : null,
+                UnidadeId = dto.UnidadeId,
                 DataNascimento = dto.DataNascimento,
                 CreatedByUserId = createdByUserId
             };
@@ -202,6 +202,15 @@ namespace DRFlowHub.Api.Services
                 throw new InvalidOperationException("Empresa e revenda sao obrigatorias para este perfil.");
         }
 
+        private static int? NormalizeUnidadeId(int? unidadeId)
+            => unidadeId.HasValue && unidadeId.Value > 0 ? unidadeId : null;
+
+        private void ValidateUnidadeExists(int? unidadeId)
+        {
+            if (unidadeId.HasValue && !_context.Unidade.Any(unidade => unidade.Id == unidadeId.Value))
+                throw new InvalidOperationException("Empresa e revenda informadas nao foram encontradas.");
+        }
+
         public static UserResponseDto ToResponse(Users user, List<string>? acessos = null)
         {
             return new UserResponseDto
@@ -236,7 +245,7 @@ namespace DRFlowHub.Api.Services
             var defaults = new Dictionary<string, string[]>(StringComparer.OrdinalIgnoreCase)
             {
                 ["Admin"] = PerfisService.AcessosDisponiveis.Select(a => a.Chave).ToArray(),
-                ["TI"] = new[] { "dashboard-admin", "ti", "ti-admin", "equipamentos-ti", "controladoria", "vendas-pecas", "veiculos", "veiculos-bi", "usuarios", "empresas-revendas", "perfis" },
+                ["TI"] = new[] { "dashboard-admin", "ti", "ti-admin", "base-conhecimento-ti", "equipamentos-ti", "controladoria", "vendas-pecas", "veiculos", "veiculos-bi", "usuarios", "empresas-revendas", "perfis" },
                 ["RH"] = new[] { "dashboard-rh", "rh", "rh-admin", "cartao-ponto" },
                 ["Diretoria"] = new[] { "compras" },
                 ["Compras"] = new[] { "compras", "compras-admin" },

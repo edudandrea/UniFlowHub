@@ -4,8 +4,10 @@ using DRFlowHub.Api.Models;
 using DRFlowHub.Api.Security;
 using Microsoft.EntityFrameworkCore;
 using Oracle.ManagedDataAccess.Client;
+using Oracle.ManagedDataAccess.Types;
 using System.Data;
 using System.Data.Common;
+using System.Globalization;
 
 namespace DRFlowHub.Api.Services
 {
@@ -31,10 +33,11 @@ namespace DRFlowHub.Api.Services
                         + COALESCE(FMI.VAL_FRETE, 0)
                     ) AS FATURAMENTO,
                     SUM(
-                        COALESCE(FMI.VAL_ICMS, 0)
+                        ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
                         + COALESCE(FMI.VAL_PIS, 0)
                         + COALESCE(FMI.VAL_COFINS, 0)
-                    ) AS TRIBUTOS_RENTABILIDADE,
+                        + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
+                    ) AS DESPESAS_RENTABILIDADE,
                     SUM(
                         COALESCE(FMI.VAL_ICMS, 0)
                         + COALESCE(FMI.VAL_ICMS_RETIDO, 0)
@@ -46,7 +49,7 @@ namespace DRFlowHub.Api.Services
                         + COALESCE(FMI.VAL_FCP_ST, 0)
                         + COALESCE(FMI.VAL_FCP_OUTROS, 0)
                     ) AS IMPOSTOS,
-                    SUM(COALESCE(PIE.CUSTO_MEDIO, 0) * COALESCE(FMI.QUANTIDADE, 0)) AS CUSTO_MEDIO
+                    SUM(COALESCE(FMI.VAL_CUSTO_MEDIO, 0)) AS CUSTO_RENTABILIDADE
                 FROM FAT_MOVIMENTO_ITEM FMI
                 INNER JOIN PEC_ITEM_ESTOQUE PIE
                   ON PIE.EMPRESA = FMI.EMPRESA
@@ -64,6 +67,7 @@ namespace DRFlowHub.Api.Services
                     CONTADOR,
                     MIN(VENDEDOR) AS VENDEDOR
                 FROM FAT_NOTAS_VENDEDOR
+                WHERE TIPO_VENDEDOR = 'N' OR TIPO_VENDEDOR IS NULL
                 GROUP BY EMPRESA, REVENDA, NUMERO_NOTA_FISCAL, SERIE_NOTA_FISCAL, TIPO_TRANSACAO, CONTADOR
             ),
             BASE AS (
@@ -79,29 +83,27 @@ namespace DRFlowHub.Api.Services
                     COALESCE(FV.NOME, 'Vendedor ' || TO_CHAR(FNV.VENDEDOR)) AS NOME_VENDEDOR,
                     REGEXP_REPLACE(COALESCE(TO_CHAR(FV.CPF), ''), '[^0-9]', '') AS CPF_VENDEDOR,
                     CASE
-                        WHEN FMC.TIPO_TRANSACAO = 'P07' THEN 'P21'
-                        WHEN FMC.TIPO_TRANSACAO = 'P33' THEN 'P23'
-                        WHEN FMC.TIPO_TRANSACAO = 'P77' THEN 'P41'
+                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                         ELSE FMC.TIPO_TRANSACAO
                     END AS CANAL,
                     CASE
-                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                        WHEN TT.TIPO = 'E' THEN -1
                         ELSE 1
                     END * COALESCE(VI.FATURAMENTO, 0) AS FATURAMENTO,
                     CASE
-                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                        WHEN TT.TIPO = 'E' THEN -1
                         ELSE 1
-                    END * (COALESCE(VI.FATURAMENTO, 0) - COALESCE(VI.IMPOSTOS, 0)) AS MARGEM,
+                    END * (COALESCE(VI.FATURAMENTO, 0) - COALESCE(VI.CUSTO_RENTABILIDADE, 0)) AS MARGEM,
                     CASE
-                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                        WHEN TT.TIPO = 'E' THEN -1
                         ELSE 1
-                    END * COALESCE(VI.CUSTO_MEDIO, 0) AS CUSTO_MEDIO,
+                    END * COALESCE(VI.CUSTO_RENTABILIDADE, 0) AS CUSTO_RENTABILIDADE,
                     CASE
-                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                        WHEN TT.TIPO = 'E' THEN -1
                         ELSE 1
-                    END * COALESCE(VI.TRIBUTOS_RENTABILIDADE, 0) AS TRIBUTOS_RENTABILIDADE,
+                    END * COALESCE(VI.DESPESAS_RENTABILIDADE, 0) AS DESPESAS_RENTABILIDADE,
                     CASE
-                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN 0
+                        WHEN TT.TIPO = 'E' THEN 0
                         ELSE 1
                     END AS QTD_NOTAS
                 FROM FAT_MOVIMENTO_CAPA FMC
@@ -129,12 +131,25 @@ namespace DRFlowHub.Api.Services
                   ON FV.EMPRESA = COALESCE(FMCORI.EMPRESA, FMC.EMPRESA)
                  AND FV.REVENDA = COALESCE(FMCORI.REVENDA, FMC.REVENDA)
                  AND FV.VENDEDOR = FNV.VENDEDOR
-                WHERE FMC.TIPO_TRANSACAO IN ('P21', 'P23', 'P41', 'P07', 'P33', 'P77')
-                  AND TO_CHAR(FMC.DEPARTAMENTO) = '3'
+                WHERE TO_CHAR(FMC.DEPARTAMENTO) = '3'
                   AND FMC.STATUS = 'F'
                   AND (
-                      (FMC.TIPO_TRANSACAO IN ('P21', 'P23', 'P41') AND TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO IN ('N', 'I'))
-                      OR FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77')
+                      TT.TIPO = 'E'
+                      OR TT.TIPO_TRANSACAO IN (
+                          'C01', 'C02', 'C10', 'C20', 'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C30', 'C50',
+                          'F21', 'F30', 'G21', 'G25', 'G55', 'I21', 'I24', 'I50', 'I51', 'L21', 'L23', 'L25',
+                          'L26', 'L29', 'L30', 'L32', 'L34', 'L35', 'L36', 'L38', 'L39', 'L40', 'L50', 'L52',
+                          'L54', 'L56', 'M21', 'M27', 'M61', 'O20', 'O21', 'O24', 'O26', 'O31', 'P13', 'P20',
+                          'P21', 'P23', 'P24', 'P25', 'P28', 'P30', 'P31', 'P32', 'P34', 'P40', 'P41', 'P43',
+                          'P44', 'P45', 'P46', 'P50', 'P51', 'P52', 'P53', 'P56', 'P58', 'P69', 'P71', 'R23',
+                          'R32', 'T21', 'T23', 'T24', 'T26', 'T28', 'T29', 'T30', 'T31', 'T32', 'T33', 'T34',
+                          'T35', 'U21', 'U23', 'U24', 'V21', 'V24', 'V25', 'V51', 'V52', 'V55', 'V58', 'V70',
+                          'V98', 'V99'
+                      )
+                  )
+                  AND (
+                      (TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO = 'N')
+                      OR (TT.TIPO = 'E' AND TT.SUBTIPO_TRANSACAO = 'D' AND FMC.FATOPERACAO_ORIGINAL IS NOT NULL)
                   )
                   AND COALESCE(FMC.NFE_SITUACAO, ' ') <> 'D'
                   AND FMC.DTA_ENTRADA_SAIDA BETWEEN :DATA_INICIO AND :DATA_FIM
@@ -155,15 +170,14 @@ namespace DRFlowHub.Api.Services
                             AND FNVF.SERIE_NOTA_FISCAL = COALESCE(FMCORI.SERIE_NOTA_FISCAL, FMC.SERIE_NOTA_FISCAL)
                             AND FNVF.TIPO_TRANSACAO = COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                             AND FNVF.CONTADOR = COALESCE(FMCORI.CONTADOR, FMC.CONTADOR)
+                            AND (FNVF.TIPO_VENDEDOR = 'N' OR FNVF.TIPO_VENDEDOR IS NULL)
                             AND REGEXP_REPLACE(COALESCE(TO_CHAR(FVF.CPF), ''), '[^0-9]', '') = :CPF_VENDEDOR
                       )
                   )
                   AND (
                       :CANAL IS NULL
                       OR CASE
-                            WHEN FMC.TIPO_TRANSACAO = 'P07' THEN 'P21'
-                            WHEN FMC.TIPO_TRANSACAO = 'P33' THEN 'P23'
-                            WHEN FMC.TIPO_TRANSACAO = 'P77' THEN 'P41'
+                            WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                             ELSE FMC.TIPO_TRANSACAO
                          END = :CANAL
                   )
@@ -176,7 +190,7 @@ namespace DRFlowHub.Api.Services
                 SUM(MARGEM) AS MARGEM,
                 CASE
                     WHEN SUM(FATURAMENTO) = 0 THEN 0
-                    ELSE ((SUM(FATURAMENTO) - (SUM(CUSTO_MEDIO) + SUM(TRIBUTOS_RENTABILIDADE))) / SUM(FATURAMENTO)) * 100
+                    ELSE ((SUM(FATURAMENTO) - (SUM(CUSTO_RENTABILIDADE) + SUM(DESPESAS_RENTABILIDADE))) / SUM(FATURAMENTO)) * 100
                 END AS RENTABILIDADE_PERCENTUAL,
                 SUM(QTD_NOTAS) AS QUANTIDADE
             FROM BASE
@@ -256,13 +270,13 @@ namespace DRFlowHub.Api.Services
                     COALESCE(TO_CHAR(PIE.GRUPO), 'Pecas') AS CATEGORIA,
                     SUM(
                         CASE
-                            WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                            WHEN TT.TIPO = 'E' THEN -1
                             ELSE 1
                         END * COALESCE(FMI.QUANTIDADE, 0)
                     ) AS QUANTIDADE,
                     SUM(
                         CASE
-                            WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                            WHEN TT.TIPO = 'E' THEN -1
                             ELSE 1
                         END * (
                             COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
@@ -270,11 +284,10 @@ namespace DRFlowHub.Api.Services
                             + COALESCE(FMI.VAL_FRETE, 0)
                         )
                     ) AS FATURAMENTO,
-                    0 AS MARGEM_PERCENTUAL,
                     CASE
                         WHEN SUM(
                             CASE
-                                WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                                WHEN TT.TIPO = 'E' THEN -1
                                 ELSE 1
                             END * (
                                 COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
@@ -286,7 +299,7 @@ namespace DRFlowHub.Api.Services
                             (
                                 SUM(
                                     CASE
-                                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                                        WHEN TT.TIPO = 'E' THEN -1
                                         ELSE 1
                                     END * (
                                         COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
@@ -296,19 +309,62 @@ namespace DRFlowHub.Api.Services
                                 )
                                 - SUM(
                                     CASE
-                                        WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                                        WHEN TT.TIPO = 'E' THEN -1
+                                        ELSE 1
+                                    END * COALESCE(FMI.VAL_CUSTO_MEDIO, 0)
+                                )
+                            )
+                            / SUM(
+                                CASE
+                                    WHEN TT.TIPO = 'E' THEN -1
+                                    ELSE 1
+                                END * (
+                                    COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
+                                    - (COALESCE(FMI.VAL_DESCONTO, 0) - COALESCE(FMI.VAL_DESCONTO_FRANQUIA, 0))
+                                    + COALESCE(FMI.VAL_FRETE, 0)
+                                )
+                            )
+                        ) * 100
+                    END AS MARGEM_PERCENTUAL,
+                    CASE
+                        WHEN SUM(
+                            CASE
+                                WHEN TT.TIPO = 'E' THEN -1
+                                ELSE 1
+                            END * (
+                                COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
+                                - (COALESCE(FMI.VAL_DESCONTO, 0) - COALESCE(FMI.VAL_DESCONTO_FRANQUIA, 0))
+                                + COALESCE(FMI.VAL_FRETE, 0)
+                            )
+                        ) = 0 THEN 0
+                        ELSE (
+                            (
+                                SUM(
+                                    CASE
+                                        WHEN TT.TIPO = 'E' THEN -1
                                         ELSE 1
                                     END * (
-                                        (COALESCE(PIE.CUSTO_MEDIO, 0) * COALESCE(FMI.QUANTIDADE, 0))
-                                        + COALESCE(FMI.VAL_ICMS, 0)
+                                        COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
+                                        - (COALESCE(FMI.VAL_DESCONTO, 0) - COALESCE(FMI.VAL_DESCONTO_FRANQUIA, 0))
+                                        + COALESCE(FMI.VAL_FRETE, 0)
+                                    )
+                                )
+                                - SUM(
+                                    CASE
+                                        WHEN TT.TIPO = 'E' THEN -1
+                                        ELSE 1
+                                    END * (
+                                        COALESCE(FMI.VAL_CUSTO_MEDIO, 0)
+                                        + ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
                                         + COALESCE(FMI.VAL_PIS, 0)
                                         + COALESCE(FMI.VAL_COFINS, 0)
+                                        + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
                                     )
                                 )
                             )
                             / SUM(
                                 CASE
-                                    WHEN FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77') THEN -1
+                                    WHEN TT.TIPO = 'E' THEN -1
                                     ELSE 1
                                 END * (
                                     COALESCE(FMI.VAL_TOTAL_REAL_ITEM, 0)
@@ -335,12 +391,25 @@ namespace DRFlowHub.Api.Services
                   ON FMCORI.EMPRESA = FMC.EMPRESA
                  AND FMCORI.REVENDA = FMC.REVENDA
                  AND FMCORI.FATOPERACAO = FMC.FATOPERACAO_ORIGINAL
-                WHERE FMC.TIPO_TRANSACAO IN ('P21', 'P23', 'P41', 'P07', 'P33', 'P77')
-                  AND TO_CHAR(FMC.DEPARTAMENTO) = '3'
+                WHERE TO_CHAR(FMC.DEPARTAMENTO) = '3'
                   AND FMC.STATUS = 'F'
                   AND (
-                      (FMC.TIPO_TRANSACAO IN ('P21', 'P23', 'P41') AND TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO IN ('N', 'I'))
-                      OR FMC.TIPO_TRANSACAO IN ('P07', 'P33', 'P77')
+                      TT.TIPO = 'E'
+                      OR TT.TIPO_TRANSACAO IN (
+                          'C01', 'C02', 'C10', 'C20', 'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C30', 'C50',
+                          'F21', 'F30', 'G21', 'G25', 'G55', 'I21', 'I24', 'I50', 'I51', 'L21', 'L23', 'L25',
+                          'L26', 'L29', 'L30', 'L32', 'L34', 'L35', 'L36', 'L38', 'L39', 'L40', 'L50', 'L52',
+                          'L54', 'L56', 'M21', 'M27', 'M61', 'O20', 'O21', 'O24', 'O26', 'O31', 'P13', 'P20',
+                          'P21', 'P23', 'P24', 'P25', 'P28', 'P30', 'P31', 'P32', 'P34', 'P40', 'P41', 'P43',
+                          'P44', 'P45', 'P46', 'P50', 'P51', 'P52', 'P53', 'P56', 'P58', 'P69', 'P71', 'R23',
+                          'R32', 'T21', 'T23', 'T24', 'T26', 'T28', 'T29', 'T30', 'T31', 'T32', 'T33', 'T34',
+                          'T35', 'U21', 'U23', 'U24', 'V21', 'V24', 'V25', 'V51', 'V52', 'V55', 'V58', 'V70',
+                          'V98', 'V99'
+                      )
+                  )
+                  AND (
+                      (TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO = 'N')
+                      OR (TT.TIPO = 'E' AND TT.SUBTIPO_TRANSACAO = 'D' AND FMC.FATOPERACAO_ORIGINAL IS NOT NULL)
                   )
                   AND PIE.TIPO_INDUSTRIALIZACAO IS NULL
                   AND COALESCE(FMC.NFE_SITUACAO, ' ') <> 'D'
@@ -362,15 +431,14 @@ namespace DRFlowHub.Api.Services
                             AND FNVF.SERIE_NOTA_FISCAL = COALESCE(FMCORI.SERIE_NOTA_FISCAL, FMC.SERIE_NOTA_FISCAL)
                             AND FNVF.TIPO_TRANSACAO = COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                             AND FNVF.CONTADOR = COALESCE(FMCORI.CONTADOR, FMC.CONTADOR)
+                            AND (FNVF.TIPO_VENDEDOR = 'N' OR FNVF.TIPO_VENDEDOR IS NULL)
                             AND REGEXP_REPLACE(COALESCE(TO_CHAR(FVF.CPF), ''), '[^0-9]', '') = :CPF_VENDEDOR
                       )
                   )
                   AND (
                       :CANAL IS NULL
                       OR CASE
-                            WHEN FMC.TIPO_TRANSACAO = 'P07' THEN 'P21'
-                            WHEN FMC.TIPO_TRANSACAO = 'P33' THEN 'P23'
-                            WHEN FMC.TIPO_TRANSACAO = 'P77' THEN 'P41'
+                            WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                             ELSE FMC.TIPO_TRANSACAO
                          END = :CANAL
                   )
@@ -415,10 +483,11 @@ namespace DRFlowHub.Api.Services
             var vendas = await LoadVendasMensaisAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
             var canais = await LoadCanaisAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
             var podeVerRankingVendedores = RoleScope.IsGerenteGeralPecas(role) || RoleScope.IsGerentePecas(role) || RoleScope.IsAdmin(role) || RoleScope.IsTI(role);
+            var podeVerClientes = podeVerRankingVendedores || RoleScope.IsVendedorPecas(role);
             var vendedores = podeVerRankingVendedores
                 ? await LoadVendedoresAsync(connection, dataInicio, dataFim, empresa, revenda, canal)
                 : new List<PecaVendedorDto>();
-            var clientes = podeVerRankingVendedores
+            var clientes = podeVerClientes
                 ? await LoadTopClientesAsync(connection, TopCompradoresSql, dataInicio, dataFim, empresa, revenda, cpfVendedor)
                 : new List<PecaClienteDto>();
             var seguradoras = podeVerRankingVendedores
@@ -426,7 +495,7 @@ namespace DRFlowHub.Api.Services
                 : new List<PecaClienteDto>();
             var pecas = await LoadTopPecasAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
             await ApplyMetasAsync(vendedores);
-            var minhaMeta = await LoadMinhaMetaAsync(connection, cpfVendedor, canal);
+            var minhaMeta = await LoadMinhaMetaAsync(connection, cpfVendedor, canal, dataInicio, dataFim);
 
             return new PecasBiResponseDto
             {
@@ -622,7 +691,7 @@ namespace DRFlowHub.Api.Services
             }
         }
 
-        private async Task<PecaMetaResumoDto?> LoadMinhaMetaAsync(OracleConnection connection, string? cpfVendedor, object canal)
+        private async Task<PecaMetaResumoDto?> LoadMinhaMetaAsync(OracleConnection connection, string? cpfVendedor, object canal, DateTime filtroDataInicio, DateTime filtroDataFim)
         {
             var cpf = OnlyDigits(cpfVendedor);
             if (string.IsNullOrWhiteSpace(cpf))
@@ -635,9 +704,14 @@ namespace DRFlowHub.Api.Services
             if (meta is null || !meta.DataInicio.HasValue || !meta.DataFim.HasValue)
                 return null;
 
-            var dataInicio = meta.DataInicio.Value.Date;
-            var dataFim = meta.DataFim.Value.Date.AddDays(1).AddTicks(-1);
-            var valorVendido = await LoadValorVendidoMetaAsync(connection, dataInicio, dataFim, cpf, canal);
+            var metaDataInicio = meta.DataInicio.Value.Date;
+            var metaDataFim = meta.DataFim.Value.Date;
+            var filtroInicio = filtroDataInicio.Date;
+            var filtroFim = filtroDataFim.Date;
+            if (filtroInicio < metaDataInicio || filtroFim > metaDataFim)
+                return null;
+
+            var valorVendido = await LoadValorVendidoMetaAsync(connection, filtroDataInicio, filtroDataFim, cpf, canal);
 
             return new PecaMetaResumoDto
             {
@@ -756,7 +830,50 @@ namespace DRFlowHub.Api.Services
         private static decimal GetDecimal(DbDataReader reader, string column)
         {
             var ordinal = reader.GetOrdinal(column);
-            return reader.IsDBNull(ordinal) ? 0 : Convert.ToDecimal(reader.GetValue(ordinal));
+            if (reader.IsDBNull(ordinal))
+                return 0;
+
+            try
+            {
+                return reader.GetDecimal(ordinal);
+            }
+            catch (OverflowException)
+            {
+            }
+            catch (InvalidCastException)
+            {
+            }
+
+            if (reader is OracleDataReader oracleReader)
+            {
+                var value = oracleReader.GetOracleDecimal(ordinal);
+                if (value.IsNull)
+                    return 0;
+
+                try
+                {
+                    return value.Value;
+                }
+                catch (OverflowException)
+                {
+                    return ParseDecimal(value.ToString());
+                }
+            }
+
+            var rawValue = reader.GetValue(ordinal);
+            return rawValue is OracleDecimal oracleDecimal
+                ? ParseDecimal(oracleDecimal.ToString())
+                : Convert.ToDecimal(rawValue, CultureInfo.InvariantCulture);
+        }
+
+        private static decimal ParseDecimal(string value)
+        {
+            if (decimal.TryParse(value, NumberStyles.Any, CultureInfo.InvariantCulture, out var parsed))
+                return parsed;
+
+            return decimal.TryParse(value, NumberStyles.Any, CultureInfo.CurrentCulture, out parsed)
+                ? parsed
+                : 0;
         }
 
         private static int GetInt(DbDataReader reader, string column)

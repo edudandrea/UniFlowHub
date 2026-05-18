@@ -97,6 +97,7 @@ builder.Services.AddScoped<IUnidadesRepo, UnidadesRepo>();
 builder.Services.AddScoped<UsersService>();
 builder.Services.AddScoped<SolicitacoesRHService>();
 builder.Services.AddScoped<ChamadosTIService>();
+builder.Services.AddScoped<BaseConhecimentoTIService>();
 builder.Services.AddScoped<EquipamentosTIService>();
 builder.Services.AddScoped<SolicitacoesCompraService>();
 builder.Services.AddScoped<UnidadesService>();

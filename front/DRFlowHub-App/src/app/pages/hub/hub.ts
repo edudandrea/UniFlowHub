@@ -309,6 +309,7 @@ export class HubPage implements OnInit {
     if (area === 'ti') {
       return [
         { label: 'Abrir chamado', route: '/ti', description: 'Criar ou acompanhar chamado de TI.', enabled: true },
+        { label: 'Base de conhecimento', route: '/ti/base-conhecimento', description: 'Manuais e procedimentos do setor.', enabled: this.auth.hasAccess('base-conhecimento-ti') },
         { label: 'Equipamentos', route: '/ti/equipamentos', description: 'Controle de entregas e retornos.', enabled: this.auth.hasAccess('ti-admin') },
       ];
     }
@@ -393,8 +394,8 @@ export class HubPage implements OnInit {
 
     navigator.geolocation.getCurrentPosition(
       (position) => {
-        this.forecastLocation.set('Sua localizacao');
-        void this.fetchForecast(position.coords.latitude, position.coords.longitude, 'Sua localizacao');
+        this.forecastLocation.set('Identificando cidade...');
+        void this.loadCurrentLocationForecast(position.coords.latitude, position.coords.longitude);
       },
       () => void this.fetchForecast(fallback.latitude, fallback.longitude, fallback.label),
       { timeout: 3500, maximumAge: 30 * 60 * 1000 },
@@ -425,6 +426,42 @@ export class HubPage implements OnInit {
 
   private metric(label: string, value: number, detail: string, tone: MetricCard['tone']): MetricCard {
     return { label, value, detail, tone };
+  }
+
+  private async loadCurrentLocationForecast(latitude: number, longitude: number): Promise<void> {
+    const label = await this.resolveForecastLocation(latitude, longitude);
+    await this.fetchForecast(latitude, longitude, label);
+  }
+
+  private async resolveForecastLocation(latitude: number, longitude: number): Promise<string> {
+    try {
+      const params = new URLSearchParams({
+        latitude: String(latitude),
+        longitude: String(longitude),
+        count: '1',
+        language: 'pt',
+        format: 'json',
+      });
+      const response = await fetch(`https://geocoding-api.open-meteo.com/v1/reverse?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Location unavailable');
+      }
+
+      const data = await response.json() as {
+        results?: Array<{ name?: string; admin1?: string }>;
+      };
+      const result = data.results?.[0];
+      const city = result?.name?.trim();
+      const state = result?.admin1?.trim();
+
+      if (city && state && city !== state) {
+        return `${city}, ${state}`;
+      }
+
+      return city || state || 'Sua localizacao';
+    } catch {
+      return 'Sua localizacao';
+    }
   }
 
   private async fetchForecast(latitude: number, longitude: number, label: string): Promise<void> {

@@ -32,14 +32,14 @@
   </header>
 
   <section class="filters">
-    <div>
+    <div class="filter-copy">
       <p class="system-name">Setor Peças</p>
       <h2>Visão executiva de performance, margem, giro e canais.</h2>
     </div>
-    <div class="filter-row">
+    <div class="filters-table">
       <label>
         Empresa
-        <select [ngModel]="empresaNumero()" (ngModelChange)="setEmpresa($event)" [disabled]="isGerenteEmpresaPecas() || isVendedorPecas()">
+        <select [ngModel]="empresaNumero()" (ngModelChange)="setEmpresa($event)" [disabled]="isGerenteEmpresaPecas()">
           <option [ngValue]="null">Todas</option>
           @for (empresa of empresasDisponiveis(); track empresa.id) {
             <option [ngValue]="empresa.numero">{{ empresa.numero }} - {{ empresa.nome }}</option>
@@ -65,17 +65,12 @@
       </div>
       <label>
         Canal
-        <select [value]="canal()" (change)="canal.set($any($event.target).value)">
+        <select [value]="canal()" (change)="setCanal($any($event.target).value)">
           @for (item of canais(); track item) {
             <option [value]="item">{{ item === 'Todos' ? 'Todos' : channelLabel(item) }}</option>
           }
         </select>
       </label>
-      <button class="secondary" type="button" (click)="load()" [disabled]="loading()">
-        {{ loading() ? 'Atualizando...' : 'Atualizar' }}
-      </button>
-    </div>
-    <div class="date-row">
       <label>
         Data inicial
         <input type="date" [ngModel]="dataInicio()" (ngModelChange)="dataInicio.set($event)" />
@@ -84,6 +79,9 @@
         Data final
         <input type="date" [ngModel]="dataFim()" (ngModelChange)="dataFim.set($event)" />
       </label>
+      <button class="secondary filter-action" type="button" (click)="load()" [disabled]="loading()">
+        {{ loading() ? 'Atualizando...' : 'Atualizar' }}
+      </button>
     </div>
   </section>
 
@@ -288,14 +286,16 @@
           }
         </div>
       </article>
+    }
 
-      <section class="client-rankings">
+    @if (canViewClientRanking()) {
+      <section class="client-rankings" [class.single]="!canViewSellerRanking()">
         <article class="panel clients-panel">
           <header>
             <div>
               <p class="system-name">Clientes</p>
-              <h2>Top 10 compradores</h2>
-              <span>Notas P21 e P41</span>
+              <h2>{{ isVendedorPecas() ? 'Top 10 meus clientes' : 'Top 10 compradores' }}</h2>
+              <span>Notas de vendas de peças e Mercado Livre</span>
             </div>
           </header>
           <div class="client-grid">
@@ -313,30 +313,31 @@
             }
           </div>
         </article>
-
-        <article class="panel clients-panel">
-          <header>
-            <div>
-              <p class="system-name">Seguradoras</p>
-              <h2>Top 10 seguradoras</h2>
-              <span>Notas P23</span>
+        @if (canViewSellerRanking()) {
+          <article class="panel clients-panel">
+            <header>
+              <div>
+                <p class="system-name">Seguradoras</p>
+                <h2>Top 10 seguradoras</h2>
+                <span>Notas de vendas para seguradoras</span>
+              </div>
+            </header>
+            <div class="client-grid">
+              @for (seguradora of seguradoras(); track seguradora.codigo || seguradora.nome; let index = $index) {
+                <article class="client-card insurance-card">
+                  <em>{{ index + 1 }}</em>
+                  <div>
+                    <strong>{{ seguradora.nome }}</strong>
+                    <span>{{ seguradora.notas }} notas - {{ formatMoney(seguradora.faturamento) }}</span>
+                    <p><span [style.width.%]="percent(seguradora.faturamento, clientListTotal(seguradoras()))"></span></p>
+                  </div>
+                </article>
+              } @empty {
+                <p class="empty-ranking">Nenhuma seguradora encontrada no periodo.</p>
+              }
             </div>
-          </header>
-          <div class="client-grid">
-            @for (seguradora of seguradoras(); track seguradora.codigo || seguradora.nome; let index = $index) {
-              <article class="client-card insurance-card">
-                <em>{{ index + 1 }}</em>
-                <div>
-                  <strong>{{ seguradora.nome }}</strong>
-                  <span>{{ seguradora.notas }} notas - {{ formatMoney(seguradora.faturamento) }}</span>
-                  <p><span [style.width.%]="percent(seguradora.faturamento, clientListTotal(seguradoras()))"></span></p>
-                </div>
-              </article>
-            } @empty {
-              <p class="empty-ranking">Nenhuma seguradora encontrada no periodo.</p>
-            }
-          </div>
-        </article>
+          </article>
+        }
       </section>
     }
 

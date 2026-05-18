@@ -17,6 +17,7 @@ namespace DRFlowHub.Api.Data
         public DbSet<SolicitacaoRHComunicacao> SolicitacaoRHComunicacao { get; set; }
         public DbSet<ChamadosTI> ChamadoTI { get; set; }
         public DbSet<ChamadoTIComunicacao> ChamadoTIComunicacao { get; set; }
+        public DbSet<BaseConhecimentoTI> BaseConhecimentoTI { get; set; }
         public DbSet<EquipamentoTI> EquipamentoTI { get; set; }
         public DbSet<SolicitacaoCompra> SolicitacaoCompra { get; set; }
         public DbSet<SolicitacaoCompraComunicacao> SolicitacaoCompraComunicacao { get; set; }
@@ -85,6 +86,12 @@ namespace DRFlowHub.Api.Data
                 .WithMany(s => s.Comunicacoes)
                 .HasForeignKey(s => s.ChamadoTIId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<BaseConhecimentoTI>()
+                .HasOne(s => s.OwnerUser)
+                .WithMany()
+                .HasForeignKey(s => s.Userid)
+                .OnDelete(DeleteBehavior.Restrict);
 
             modelBuilder.Entity<CartaoPontoArquivo>()
                 .HasOne(s => s.ImportadoPorUser)

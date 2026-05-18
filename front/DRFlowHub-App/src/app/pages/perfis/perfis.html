@@ -1,11 +1,39 @@
 <main class="profile-shell">
-  <header>
-    <div>
-      <p>Cadastros</p>
-      <h1>Cadastro de perfil</h1>
+  <header class="standard-topbar">
+    <button class="brand-heading" type="button" (click)="goHome()" aria-label="Ir para a tela inicial">
+      <img src="/drsul-logo.svg" alt="Grupo DRSUL" />
+      <div>
+        <p class="system-name">DRFlowHub</p>
+        <h1>Cadastro de Perfil</h1>
+      </div>
+    </button>
+
+    <div class="user-box profile-area">
+      <label class="theme-picker">
+        Tema
+        <select [value]="theme.current()" (change)="theme.setTheme($any($event.target).value)">
+          @for (option of theme.options; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <button class="profile-trigger" type="button" (click)="profileMenuOpen.set(!profileMenuOpen())">
+        <span>{{ user()?.nome }}</span>
+        <strong>{{ user()?.role }}</strong>
+      </button>
+      @if (profileMenuOpen()) {
+        <div class="profile-menu">
+          <button type="button" (click)="editProfile()">Editar perfil</button>
+          <button type="button" (click)="changePassword()">Trocar senha</button>
+          <button type="button" (click)="logout()">Sair</button>
+        </div>
+      }
     </div>
-    <button type="button" (click)="novo()">Novo perfil</button>
   </header>
+
+  <section class="profile-actions">
+    <button type="button" (click)="novo()">Novo perfil</button>
+  </section>
 
   <section class="profile-grid">
     @for (perfil of perfis(); track perfil.id) {

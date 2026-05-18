@@ -19,6 +19,7 @@ namespace DRFlowHub.Api.Services
             new() { Chave = "cartao-ponto", Nome = "Controle cartao ponto", Grupo = "Departamentos" },
             new() { Chave = "ti", Nome = "Chamados de TI", Grupo = "Departamentos" },
             new() { Chave = "ti-admin", Nome = "Administrador do setor TI", Grupo = "Administradores de setor" },
+            new() { Chave = "base-conhecimento-ti", Nome = "Base de conhecimento TI", Grupo = "Departamentos" },
             new() { Chave = "equipamentos-ti", Nome = "Equipamentos de TI", Grupo = "Departamentos" },
             new() { Chave = "compras", Nome = "Compras", Grupo = "Departamentos" },
             new() { Chave = "compras-admin", Nome = "Administrador do setor Compras", Grupo = "Administradores de setor" },
@@ -34,7 +35,7 @@ namespace DRFlowHub.Api.Services
         private static readonly Dictionary<string, string[]> PerfisPadrao = new(StringComparer.OrdinalIgnoreCase)
         {
             ["Admin"] = AcessosDisponiveis.Select(a => a.Chave).ToArray(),
-            ["TI"] = new[] { "dashboard-admin", "ti", "ti-admin", "equipamentos-ti", "controladoria", "vendas-pecas", "veiculos", "veiculos-bi", "usuarios", "empresas-revendas", "perfis" },
+            ["TI"] = new[] { "dashboard-admin", "ti", "ti-admin", "base-conhecimento-ti", "equipamentos-ti", "controladoria", "vendas-pecas", "veiculos", "veiculos-bi", "usuarios", "empresas-revendas", "perfis" },
             ["RH"] = new[] { "dashboard-rh", "rh", "rh-admin", "cartao-ponto" },
             ["Diretoria"] = new[] { "compras" },
             ["Compras"] = new[] { "compras", "compras-admin" },

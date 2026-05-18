@@ -11,6 +11,9 @@ import { ProfileFlowService } from '../../core/profile-flow.service';
 import { ThemeService } from '../../core/theme.service';
 import { UnidadesService } from '../../core/unidades.service';
 
+const ALLOWED_CHANNELS = ['P21', 'P23', 'P41'] as const;
+const EXCLUDED_CHART_CHANNELS = new Set(['F21', 'G21', 'P51']);
+
 @Component({
   selector: 'app-pecas-bi',
   imports: [DatePipe, FormsModule],
@@ -48,15 +51,19 @@ export class PecasBiPage implements OnInit {
   readonly revendaPickerOpen = signal(false);
   readonly pecaSortField = signal<'nome' | 'quantidade' | 'faturamento'>('faturamento');
 
-  readonly canais = computed(() => ['Todos', 'P21', 'P23', 'P41']);
+  readonly canais = computed(() => ['Todos', ...ALLOWED_CHANNELS]);
   readonly vendas = computed(() => this.data()?.vendasMensais ?? []);
   readonly categorias = computed(() => this.data()?.categorias ?? []);
   readonly pecas = computed(() => this.data()?.pecas ?? []);
   readonly vendedores = computed(() => this.data()?.vendedores ?? []);
-  readonly canaisData = computed(() => (this.data()?.canais ?? []).filter((item) => item.nome?.trim().toUpperCase() !== 'P47'));
+  readonly canaisData = computed(() => (this.data()?.canais ?? []).filter((item) => {
+    const canal = item.nome?.trim().toUpperCase() ?? '';
+    return !EXCLUDED_CHART_CHANNELS.has(canal) && canal !== 'P47';
+  }));
   readonly clientes = computed(() => this.data()?.clientes ?? []);
   readonly seguradoras = computed(() => this.data()?.seguradoras ?? []);
   readonly canViewSellerRanking = computed(() => this.data()?.podeVerRankingVendedores ?? false);
+  readonly canViewClientRanking = computed(() => this.canViewSellerRanking() || this.isVendedorPecas());
   readonly isGerenteEmpresaPecas = computed(() => this.user()?.role === 'Gerente de Pecas');
   readonly isGerenteGeralPecas = computed(() => this.user()?.role === 'Gerente Geral de Pecas');
   readonly isVendedorPecas = computed(() => this.user()?.role === 'Vendedor de Pecas');
@@ -64,7 +71,7 @@ export class PecasBiPage implements OnInit {
   readonly canUseEmpresaRevendaFilters = computed(() => true);
   readonly empresasDisponiveis = computed(() => {
     const empresaNumero = this.userEmpresaNumero();
-    if (this.isGerenteEmpresaPecas() || this.isVendedorPecas()) {
+    if (this.isGerenteEmpresaPecas()) {
       return this.empresas().filter((empresa) => empresa.numero === empresaNumero);
     }
 
@@ -415,6 +422,10 @@ export class PecasBiPage implements OnInit {
     const numero = Number(value);
     this.empresaNumero.set(Number.isFinite(numero) && numero > 0 ? numero : null);
     this.revendasSelecionadas.set([]);
+  }
+
+  setCanal(value: string): void {
+    this.canal.set(ALLOWED_CHANNELS.includes(value as typeof ALLOWED_CHANNELS[number]) ? value : 'Todos');
   }
 
   setRevendas(values: unknown): void {

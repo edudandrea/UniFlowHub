@@ -5,6 +5,7 @@ import { AdminDashboardPage } from './pages/admin-dashboard/admin-dashboard';
 import { ComprasPage } from './pages/compras/compras';
 import { ControladoriaComponent } from './pages/controladoria/controladoria.component';
 import { CartaoPontoPage } from './pages/cartao-ponto/cartao-ponto';
+import { BaseConhecimentoTIPage } from './pages/base-conhecimento-ti/base-conhecimento-ti';
 import { EquipamentosTIPage } from './pages/equipamentos-ti/equipamentos-ti';
 import { HubPage } from './pages/hub/hub';
 import { LoginPage } from './pages/login/login';
@@ -53,6 +54,11 @@ export const routes: Routes = [
     path: 'ti/equipamentos',
     component: EquipamentosTIPage,
     canActivate: [accessGuard(['equipamentos-ti'])],
+  },
+  {
+    path: 'ti/base-conhecimento',
+    component: BaseConhecimentoTIPage,
+    canActivate: [accessGuard(['base-conhecimento-ti'])],
   },
   {
     path: 'compras',

@@ -1,6 +1,5 @@
 .profile-shell {
   min-height: 100dvh;
-  padding: 28px clamp(18px, 4vw, 48px);
   background: var(--color-page);
   color: var(--color-text);
 }
@@ -12,12 +11,9 @@ h3 {
   margin: 0;
 }
 
-.profile-shell > header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 18px;
-  margin-bottom: 20px;
+.profile-actions,
+.profile-grid {
+  padding-inline: clamp(18px, 4vw, 48px);
 }
 
 header p,
@@ -38,10 +34,17 @@ button {
   cursor: pointer;
 }
 
+.profile-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-block: 24px 14px;
+}
+
 .profile-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
+  padding-bottom: 24px;
 }
 
 .profile-card {
@@ -167,7 +170,6 @@ input {
     align-items: flex-start;
   }
 
-  .profile-shell > header,
   .modal-dialog header,
   .modal-actions {
     align-items: stretch;

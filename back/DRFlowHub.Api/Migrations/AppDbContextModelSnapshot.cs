@@ -22,6 +22,58 @@ namespace DRFlowHub.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("DRFlowHub.Api.Models.BaseConhecimentoTI", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer");
+
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ArquivoContentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ArquivoNome")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ArquivoUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Categoria")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DataAtualizacao")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("DataCadastro")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Descricao")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Tags")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Titulo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Userid")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Userid");
+
+                    b.ToTable("BaseConhecimentoTI");
+                });
+
             modelBuilder.Entity("DRFlowHub.Api.Models.CartaoPontoArquivo", b =>
                 {
                     b.Property<int>("Id")
@@ -885,6 +937,17 @@ namespace DRFlowHub.Migrations
                         .IsUnique();
 
                     b.ToTable("VeiculoReserva");
+                });
+
+            modelBuilder.Entity("DRFlowHub.Api.Models.BaseConhecimentoTI", b =>
+                {
+                    b.HasOne("DRFlowHub.Api.Models.Users", "OwnerUser")
+                        .WithMany()
+                        .HasForeignKey("Userid")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("OwnerUser");
                 });
 
             modelBuilder.Entity("DRFlowHub.Api.Models.CartaoPontoArquivo", b =>

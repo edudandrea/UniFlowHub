@@ -187,6 +187,23 @@ export interface EquipamentoTI {
 
 export type EquipamentoTIPayload = Omit<EquipamentoTI, 'id' | 'dataMovimentacao' | 'documentoUrl' | 'userid'>;
 
+export interface BaseConhecimentoTI {
+  id: number;
+  titulo: string;
+  categoria: string;
+  descricao: string;
+  tags: string;
+  arquivoNome: string;
+  arquivoUrl: string;
+  arquivoContentType: string;
+  dataCadastro: string;
+  dataAtualizacao?: string | null;
+  userid: number;
+  autorNome: string;
+}
+
+export type BaseConhecimentoTIPayload = Pick<BaseConhecimentoTI, 'titulo' | 'categoria' | 'descricao' | 'tags'>;
+
 export interface SolicitacaoCompra {
   id: number;
   titulo: string;

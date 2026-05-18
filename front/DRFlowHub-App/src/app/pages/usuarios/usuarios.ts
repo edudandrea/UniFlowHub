@@ -167,7 +167,7 @@ export class UsuariosPage implements OnInit {
 
   loadUnidades(): void {
     this.unidadesService.list().subscribe({
-      next: (unidades) => this.unidades.set(unidades),
+      next: (unidades) => this.unidades.set(this.sortRevendas(unidades)),
       error: (error) => this.toastr.error(this.getErrorMessage('Nao foi possivel carregar as empresas e revendas.', error), 'Erro'),
     });
   }
@@ -472,7 +472,7 @@ export class UsuariosPage implements OnInit {
 
   revendasDoUsuario(): Unidade[] {
     const empresaId = Number(this.form.controls.empresaSelecionadaId.value);
-    return this.unidades().filter((item) => item.empresaId === empresaId);
+    return this.sortRevendas(this.unidades().filter((item) => item.empresaId === empresaId));
   }
 
   goHome(): void {
@@ -551,6 +551,14 @@ export class UsuariosPage implements OnInit {
   private sortTreeItems<T>(items: T[], labelSelector: (item: T) => string): T[] {
     const direction = this.sortDirection() === 'asc' ? 1 : -1;
     return items.slice().sort((a, b) => this.normalize(labelSelector(a)).localeCompare(this.normalize(labelSelector(b))) * direction);
+  }
+
+  private sortRevendas(items: Unidade[]): Unidade[] {
+    return items.slice().sort((a, b) =>
+      (a.empresaNumero ?? 0) - (b.empresaNumero ?? 0)
+      || (a.numeroRevenda ?? 0) - (b.numeroRevenda ?? 0)
+      || this.normalize(a.revenda).localeCompare(this.normalize(b.revenda)),
+    );
   }
 
   private compareTreeLabels(a: string, b: string): number {

@@ -76,6 +76,7 @@ export class App {
       route: '/ti',
       enabled: true,
       children: [
+        { label: 'Base de conhecimento', description: 'Manuais e procedimentos', route: '/ti/base-conhecimento', enabled: true, access: 'base-conhecimento-ti' },
         { label: 'Chamados', description: 'Fila e atendimento', route: '/ti', enabled: true, access: 'ti', adminAccess: 'ti-admin' },
         { label: 'Controle de equipamentos', description: 'Inventario e movimentacoes', route: '/ti/equipamentos', enabled: true, access: 'equipamentos-ti' },
       ],

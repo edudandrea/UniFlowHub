@@ -82,10 +82,10 @@ namespace DRFlowHub.Api.Services
 
             dto.Role = AuthService.NormalizeRole(dto.Role);
             EnsureConfiguredRole(dto.Role);
-            if (!AuthService.ShouldRequireUnidade(dto.Role))
-                dto.UnidadeId = null;
+            dto.UnidadeId = NormalizeUnidadeId(dto.UnidadeId);
 
             AuthService.ValidateUnidadeForRole(dto.Role, dto.UnidadeId);
+            ValidateUnidadeExists(dto.UnidadeId);
 
             if (_repo.Query().Any(u => u.Id != id && u.Email == email))
                 throw new InvalidOperationException("Ja existe um usuario com este email.");
@@ -97,7 +97,7 @@ namespace DRFlowHub.Api.Services
             user.Departamento = dto.Departamento.Trim();
             user.Cargo = dto.Cargo.Trim();
             user.Ativo = dto.Ativo;
-            user.UnidadeId = AuthService.ShouldRequireUnidade(dto.Role) ? dto.UnidadeId : null;
+            user.UnidadeId = dto.UnidadeId;
             user.DataNascimento = dto.DataNascimento;
 
             if (!string.IsNullOrWhiteSpace(dto.Senha))
@@ -121,6 +121,15 @@ namespace DRFlowHub.Api.Services
 
             if (!_context.PerfilSistema.Any(p => p.Nome == role))
                 throw new InvalidOperationException("Perfil invalido.");
+        }
+
+        private static int? NormalizeUnidadeId(int? unidadeId)
+            => unidadeId.HasValue && unidadeId.Value > 0 ? unidadeId : null;
+
+        private void ValidateUnidadeExists(int? unidadeId)
+        {
+            if (unidadeId.HasValue && !_context.Unidade.Any(unidade => unidade.Id == unidadeId.Value))
+                throw new InvalidOperationException("Empresa e revenda informadas nao foram encontradas.");
         }
 
         public UserResponseDto UpdateProfile(int id, UserProfileUpdateDto dto)
