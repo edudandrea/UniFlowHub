@@ -200,9 +200,9 @@ button[type='submit']:not(.ghost):hover,
 }
 
 :root {
-  --color-brand-blue: #2454d6;
-  --color-brand-blue-strong: #12328f;
-  --color-brand-blue-soft: #eef4ff;
+  --color-brand-blue: #173f9f;
+  --color-brand-blue-strong: #071f66;
+  --color-brand-blue-soft: #e8efff;
   --color-brand-green: #58e79b;
   --color-brand-green-strong: #1fae6a;
   --color-brand-green-soft: #effcf5;
@@ -217,15 +217,15 @@ button[type='submit']:not(.ghost):hover,
   --color-danger-text: #be123c;
   --color-warning-bg: #fff8df;
   --color-warning-text: #9b5b00;
-  --color-button-bg: #12328f;
-  --color-button-bg-hover: #0b2470;
+  --color-button-bg: #071f66;
+  --color-button-bg-hover: #05184f;
   --color-button-text: #ffffff;
-  --color-button-soft-bg: #dbe7ff;
-  --color-button-soft-text: #12328f;
-  --color-profile-bg: #dbe7ff;
-  --color-profile-text: #12328f;
-  --color-menu-hover-bg: #dbe7ff;
-  --color-menu-hover-text: #12328f;
+  --color-button-soft-bg: #dbe6ff;
+  --color-button-soft-text: #071f66;
+  --color-profile-bg: #dbe6ff;
+  --color-profile-text: #071f66;
+  --color-menu-hover-bg: #dbe6ff;
+  --color-menu-hover-text: #071f66;
   --shadow-panel: 0 18px 48px rgba(16, 24, 40, 0.08);
   --shadow-card: 0 10px 28px rgba(16, 24, 40, 0.06);
 }
@@ -261,37 +261,6 @@ button[type='submit']:not(.ghost):hover,
   --shadow-card: 0 16px 38px rgba(0, 0, 0, 0.22);
 }
 
-:root[data-theme='soft-dark'] {
-  --color-brand-blue: #9bbcff;
-  --color-brand-blue-strong: #739ced;
-  --color-brand-blue-soft: rgba(115, 156, 237, 0.18);
-  --color-brand-green: #8cebb4;
-  --color-brand-green-strong: #5bd392;
-  --color-brand-green-soft: rgba(140, 235, 180, 0.12);
-  --color-page: #141824;
-  --color-surface: #1d2433;
-  --color-card-alt: #242c3d;
-  --color-field: #171d2a;
-  --color-border: #374156;
-  --color-text: #f1f5fb;
-  --color-muted: #bbc4d4;
-  --color-danger-bg: rgba(248, 113, 113, 0.16);
-  --color-danger-text: #ffb4b4;
-  --color-warning-bg: rgba(251, 191, 36, 0.16);
-  --color-warning-text: #ffe2a4;
-  --color-button-bg: #315ea8;
-  --color-button-bg-hover: #244a87;
-  --color-button-text: #ffffff;
-  --color-button-soft-bg: #2b3f60;
-  --color-button-soft-text: #e0ebff;
-  --color-profile-bg: #2b3f60;
-  --color-profile-text: #e0ebff;
-  --color-menu-hover-bg: #2b3f60;
-  --color-menu-hover-text: #ffffff;
-  --shadow-panel: 0 18px 48px rgba(0, 0, 0, 0.26);
-  --shadow-card: 0 12px 30px rgba(0, 0, 0, 0.18);
-}
-
 :root[data-theme='pink'] {
   --color-brand-blue: #be3b84;
   --color-brand-blue-strong: #90245f;
@@ -323,33 +292,6 @@ button[type='submit']:not(.ghost):hover,
   --shadow-card: 0 10px 28px rgba(190, 59, 132, 0.08);
 }
 
-:root[data-theme='red'] {
-  --color-brand-blue: #c43d3d;
-  --color-brand-blue-strong: #922424;
-  --color-brand-blue-soft: #fff1f1;
-  --color-brand-green: #fca5a5;
-  --color-brand-green-strong: #dc2626;
-  --color-brand-green-soft: #fff7f7;
-  --color-page: #fff8f7;
-  --color-surface: #ffffff;
-  --color-card-alt: #fffafa;
-  --color-field: #ffffff;
-  --color-border: #f2d7d4;
-  --color-text: #2d1715;
-  --color-muted: #7f6260;
-  --color-button-bg: #8f1d1d;
-  --color-button-bg-hover: #731717;
-  --color-button-text: #ffffff;
-  --color-button-soft-bg: #f7d4d1;
-  --color-button-soft-text: #7a1818;
-  --color-profile-bg: #f7d4d1;
-  --color-profile-text: #7a1818;
-  --color-menu-hover-bg: #8f1d1d;
-  --color-menu-hover-text: #ffffff;
-  --shadow-panel: 0 18px 48px rgba(196, 61, 61, 0.1);
-  --shadow-card: 0 10px 28px rgba(196, 61, 61, 0.08);
-}
-
 :root[data-theme='green'] {
   --color-brand-blue: #087f5b;
   --color-brand-blue-strong: #07533e;
@@ -377,6 +319,172 @@ button[type='submit']:not(.ghost):hover,
   --shadow-card: 0 10px 28px rgba(8, 127, 91, 0.08);
 }
 
+:root[data-theme='nissan'] {
+  --color-brand-blue: #7f1118;
+  --color-brand-blue-strong: #3f080d;
+  --color-brand-blue-soft: #f8d7da;
+  --color-brand-green: #b91c1c;
+  --color-brand-green-strong: #6b0d13;
+  --color-brand-green-soft: #fff1f2;
+  --color-page: #fff7f7;
+  --color-surface: #ffffff;
+  --color-card-alt: #fffafa;
+  --color-field: #ffffff;
+  --color-border: #f0d2d2;
+  --color-text: #2c1518;
+  --color-muted: #7a5a5e;
+  --color-button-bg: #4f0a10;
+  --color-button-bg-hover: #33060a;
+  --color-button-text: #ffffff;
+  --color-button-soft-bg: #f6d2d2;
+  --color-button-soft-text: #4f0a10;
+  --color-profile-bg: #f6d2d2;
+  --color-profile-text: #4f0a10;
+  --color-menu-hover-bg: #4f0a10;
+  --color-menu-hover-text: #ffffff;
+  --shadow-panel: 0 18px 48px rgba(63, 8, 13, 0.14);
+  --shadow-card: 0 10px 28px rgba(63, 8, 13, 0.1);
+}
+
+:root[data-theme='renault'] {
+  --color-brand-blue: #f5b700;
+  --color-brand-blue-strong: #8a6100;
+  --color-brand-blue-soft: #fff4c2;
+  --color-brand-green: #ffd84d;
+  --color-brand-green-strong: #b77900;
+  --color-brand-green-soft: #fff8dc;
+  --color-page: #fffbed;
+  --color-surface: #ffffff;
+  --color-card-alt: #fffdf4;
+  --color-field: #ffffff;
+  --color-border: #eadca7;
+  --color-text: #2c240f;
+  --color-muted: #766944;
+  --color-button-bg: #8a6100;
+  --color-button-bg-hover: #684900;
+  --color-button-text: #ffffff;
+  --color-button-soft-bg: #ffe8a3;
+  --color-button-soft-text: #6a4a00;
+  --color-profile-bg: #ffe8a3;
+  --color-profile-text: #6a4a00;
+  --color-menu-hover-bg: #8a6100;
+  --color-menu-hover-text: #ffffff;
+  --shadow-panel: 0 18px 48px rgba(138, 97, 0, 0.12);
+  --shadow-card: 0 10px 28px rgba(138, 97, 0, 0.08);
+}
+
+:root[data-theme='gm'] {
+  --color-brand-blue: #38bdf8;
+  --color-brand-blue-strong: #0369a1;
+  --color-brand-blue-soft: #e0f7ff;
+  --color-brand-green: #67e8f9;
+  --color-brand-green-strong: #0891b2;
+  --color-brand-green-soft: #ecfeff;
+  --color-page: #f2fbff;
+  --color-surface: #ffffff;
+  --color-card-alt: #f8fdff;
+  --color-field: #ffffff;
+  --color-border: #c9e8f5;
+  --color-text: #102638;
+  --color-muted: #557086;
+  --color-button-bg: #0369a1;
+  --color-button-bg-hover: #075985;
+  --color-button-text: #ffffff;
+  --color-button-soft-bg: #ccefff;
+  --color-button-soft-text: #075985;
+  --color-profile-bg: #ccefff;
+  --color-profile-text: #075985;
+  --color-menu-hover-bg: #0369a1;
+  --color-menu-hover-text: #ffffff;
+  --shadow-panel: 0 18px 48px rgba(3, 105, 161, 0.12);
+  --shadow-card: 0 10px 28px rgba(3, 105, 161, 0.08);
+}
+
+:root[data-theme='peugeot-citroen'] {
+  --color-brand-blue: #64748b;
+  --color-brand-blue-strong: #334155;
+  --color-brand-blue-soft: #eef2f7;
+  --color-brand-green: #94a3b8;
+  --color-brand-green-strong: #475569;
+  --color-brand-green-soft: #f5f7fa;
+  --color-page: #f7f8fa;
+  --color-surface: #ffffff;
+  --color-card-alt: #fbfcfd;
+  --color-field: #ffffff;
+  --color-border: #d9dee7;
+  --color-text: #172033;
+  --color-muted: #667085;
+  --color-button-bg: #334155;
+  --color-button-bg-hover: #1f2937;
+  --color-button-text: #ffffff;
+  --color-button-soft-bg: #e1e7ef;
+  --color-button-soft-text: #334155;
+  --color-profile-bg: #e1e7ef;
+  --color-profile-text: #334155;
+  --color-menu-hover-bg: #334155;
+  --color-menu-hover-text: #ffffff;
+  --shadow-panel: 0 18px 48px rgba(51, 65, 85, 0.12);
+  --shadow-card: 0 10px 28px rgba(51, 65, 85, 0.08);
+}
+
+:root[data-theme='bajaj'] {
+  --color-brand-blue: #1d4ed8;
+  --color-brand-blue-strong: #08245f;
+  --color-brand-blue-soft: #dbeafe;
+  --color-brand-green: #60a5fa;
+  --color-brand-green-strong: #1e3a8a;
+  --color-brand-green-soft: #eff6ff;
+  --color-page: #f4f7ff;
+  --color-surface: #ffffff;
+  --color-card-alt: #f9fbff;
+  --color-field: #ffffff;
+  --color-border: #d6e0f5;
+  --color-text: #12203b;
+  --color-muted: #596d92;
+  --color-button-bg: #08245f;
+  --color-button-bg-hover: #061a47;
+  --color-button-text: #ffffff;
+  --color-button-soft-bg: #d5e2ff;
+  --color-button-soft-text: #08245f;
+  --color-profile-bg: #d5e2ff;
+  --color-profile-text: #08245f;
+  --color-menu-hover-bg: #08245f;
+  --color-menu-hover-text: #ffffff;
+  --shadow-panel: 0 18px 48px rgba(8, 36, 95, 0.12);
+  --shadow-card: 0 10px 28px rgba(8, 36, 95, 0.08);
+}
+
+:root[data-theme='geely'] {
+  --color-brand-blue: #1d4ed8;
+  --color-brand-blue-strong: #061a47;
+  --color-brand-blue-soft: rgba(29, 78, 216, 0.24);
+  --color-brand-green: #ffffff;
+  --color-brand-green-strong: #cfe7ff;
+  --color-brand-green-soft: rgba(255, 255, 255, 0.1);
+  --color-page: #05070d;
+  --color-surface: #0d111a;
+  --color-card-alt: #151b26;
+  --color-field: #080c14;
+  --color-border: #253248;
+  --color-text: #f8fbff;
+  --color-muted: #b8c3d6;
+  --color-danger-bg: #3a1118;
+  --color-danger-text: #ff9fb0;
+  --color-warning-bg: #34220a;
+  --color-warning-text: #ffd38a;
+  --color-button-bg: #ffffff;
+  --color-button-bg-hover: #dbeafe;
+  --color-button-text: #07111f;
+  --color-button-soft-bg: #10243f;
+  --color-button-soft-text: #dbeafe;
+  --color-profile-bg: #10243f;
+  --color-profile-text: #dbeafe;
+  --color-menu-hover-bg: #ffffff;
+  --color-menu-hover-text: #07111f;
+  --shadow-panel: 0 20px 56px rgba(0, 0, 0, 0.38);
+  --shadow-card: 0 16px 38px rgba(0, 0, 0, 0.24);
+}
+
 .brand-spinner {
   display: grid;
   justify-items: center;
@@ -391,6 +499,8 @@ button[type='submit']:not(.ghost):hover,
   border-radius: 8px;
   box-shadow: var(--shadow-panel);
   color: var(--color-text);
+  opacity: 1;
+  text-shadow: none;
 }
 
 .toast-container .toast-title,
@@ -401,25 +511,25 @@ button[type='submit']:not(.ghost):hover,
 
 .toast-container .toast-success {
   border-color: color-mix(in srgb, var(--color-brand-green-strong) 34%, var(--color-border));
-  background: color-mix(in srgb, var(--color-brand-green-soft) 86%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-brand-green-strong) 12%, var(--color-surface));
   color: var(--color-brand-green-strong);
 }
 
 .toast-container .toast-error {
   border-color: color-mix(in srgb, var(--color-danger-text) 32%, var(--color-border));
-  background: var(--color-danger-bg);
+  background: color-mix(in srgb, var(--color-danger-text) 14%, var(--color-surface));
   color: var(--color-danger-text);
 }
 
 .toast-container .toast-warning {
   border-color: color-mix(in srgb, var(--color-warning-text) 32%, var(--color-border));
-  background: var(--color-warning-bg);
+  background: color-mix(in srgb, var(--color-warning-text) 16%, var(--color-surface));
   color: var(--color-warning-text);
 }
 
 .toast-container .toast-info {
   border-color: color-mix(in srgb, var(--color-brand-blue-strong) 30%, var(--color-border));
-  background: color-mix(in srgb, var(--color-brand-blue-soft) 86%, var(--color-surface));
+  background: color-mix(in srgb, var(--color-brand-blue-strong) 12%, var(--color-surface));
   color: var(--color-brand-blue-strong);
 }
 

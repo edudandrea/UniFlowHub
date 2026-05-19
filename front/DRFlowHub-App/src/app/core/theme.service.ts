@@ -1,7 +1,7 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, computed, inject, signal } from '@angular/core';
 
-export type ThemeMode = 'light' | 'dark' | 'soft-dark' | 'pink' | 'red' | 'green';
+export type ThemeMode = 'light' | 'dark' | 'pink' | 'green' | 'nissan' | 'renault' | 'gm' | 'peugeot-citroen' | 'bajaj' | 'geely';
 
 export interface ThemeOption {
   value: ThemeMode;
@@ -10,12 +10,16 @@ export interface ThemeOption {
 
 const THEME_KEY = 'drflowhub.theme';
 const THEME_OPTIONS: ThemeOption[] = [
-  { value: 'light', label: 'Light' },
+  { value: 'light', label: 'Grupo DRSUL' },
   { value: 'dark', label: 'Dark' },
-  { value: 'soft-dark', label: 'Soft dark' },
   { value: 'pink', label: 'Pink' },
-  { value: 'red', label: 'Red' },
   { value: 'green', label: 'Green' },
+  { value: 'nissan', label: 'Nissan' },
+  { value: 'renault', label: 'Renault' },
+  { value: 'gm', label: 'GM' },
+  { value: 'peugeot-citroen', label: 'Peugeot/Citroen' },
+  { value: 'bajaj', label: 'Bajaj' },
+  { value: 'geely', label: 'Geely' },
 ];
 
 @Injectable({ providedIn: 'root' })
@@ -25,7 +29,7 @@ export class ThemeService {
 
   readonly options = THEME_OPTIONS;
   readonly current = computed(() => this.mode());
-  readonly isDark = computed(() => this.mode() === 'dark' || this.mode() === 'soft-dark');
+  readonly isDark = computed(() => this.mode() === 'dark' || this.mode() === 'geely');
   readonly label = computed(() => this.options.find((item) => item.value === this.mode())?.label ?? 'Light');
 
   constructor() {

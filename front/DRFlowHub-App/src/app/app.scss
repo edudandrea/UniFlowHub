@@ -15,16 +15,8 @@
   box-shadow: var(--shadow-panel);
 }
 
-:host-context([data-theme='light']) .app-sidebar {
+:host-context(:is([data-theme='light'], [data-theme='pink'], [data-theme='green'], [data-theme='nissan'], [data-theme='renault'], [data-theme='gm'], [data-theme='peugeot-citroen'], [data-theme='bajaj'], [data-theme='geely'])) .app-sidebar {
   border-right-color: color-mix(in srgb, var(--color-brand-blue-strong) 70%, #ffffff);
-  background: linear-gradient(180deg, var(--color-brand-blue-strong), var(--color-brand-blue));
-  color: #ffffff;
-}
-
-:host-context([data-theme='pink']) .app-sidebar,
-:host-context([data-theme='red']) .app-sidebar,
-:host-context([data-theme='green']) .app-sidebar {
-  border-right-color: color-mix(in srgb, var(--color-brand-blue-strong) 78%, #ffffff);
   background: linear-gradient(180deg, var(--color-brand-blue-strong), var(--color-brand-blue));
   color: #ffffff;
 }
@@ -63,14 +55,7 @@
   text-transform: uppercase;
 }
 
-:host-context([data-theme='light']) .app-brand,
-:host-context([data-theme='pink']) .app-brand,
-:host-context([data-theme='red']) .app-brand,
-:host-context([data-theme='green']) .app-brand,
-:host-context([data-theme='light']) .app-brand small,
-:host-context([data-theme='pink']) .app-brand small,
-:host-context([data-theme='red']) .app-brand small,
-:host-context([data-theme='green']) .app-brand small {
+:host-context(:is([data-theme='light'], [data-theme='pink'], [data-theme='green'], [data-theme='nissan'], [data-theme='renault'], [data-theme='gm'], [data-theme='peugeot-citroen'], [data-theme='bajaj'], [data-theme='geely'])) :is(.app-brand, .app-brand small) {
   color: #ffffff;
 }
 
@@ -153,10 +138,7 @@
   padding: 8px 10px;
 }
 
-:host-context([data-theme='light']) .app-side-nav button,
-:host-context([data-theme='pink']) .app-side-nav button,
-:host-context([data-theme='red']) .app-side-nav button,
-:host-context([data-theme='green']) .app-side-nav button {
+:host-context(:is([data-theme='light'], [data-theme='pink'], [data-theme='green'], [data-theme='nissan'], [data-theme='renault'], [data-theme='gm'], [data-theme='peugeot-citroen'], [data-theme='bajaj'], [data-theme='geely'])) .app-side-nav button {
   color: color-mix(in srgb, #ffffff 78%, var(--color-brand-blue-soft));
 }
 
@@ -167,14 +149,7 @@
   color: var(--color-text);
 }
 
-:host-context([data-theme='light']) .app-side-nav button:hover,
-:host-context([data-theme='light']) .app-side-nav button.active,
-:host-context([data-theme='pink']) .app-side-nav button:hover,
-:host-context([data-theme='pink']) .app-side-nav button.active,
-:host-context([data-theme='red']) .app-side-nav button:hover,
-:host-context([data-theme='red']) .app-side-nav button.active,
-:host-context([data-theme='green']) .app-side-nav button:hover,
-:host-context([data-theme='green']) .app-side-nav button.active {
+:host-context(:is([data-theme='light'], [data-theme='pink'], [data-theme='green'], [data-theme='nissan'], [data-theme='renault'], [data-theme='gm'], [data-theme='peugeot-citroen'], [data-theme='bajaj'], [data-theme='geely'])) .app-side-nav button:is(:hover, .active) {
   border-color: rgba(255, 255, 255, 0.22);
   background: rgba(255, 255, 255, 0.14);
   color: #ffffff;
@@ -184,10 +159,7 @@
   border-left-color: var(--color-brand-green-strong);
 }
 
-:host-context([data-theme='light']) .app-side-nav button.active,
-:host-context([data-theme='pink']) .app-side-nav button.active,
-:host-context([data-theme='red']) .app-side-nav button.active,
-:host-context([data-theme='green']) .app-side-nav button.active {
+:host-context(:is([data-theme='light'], [data-theme='pink'], [data-theme='green'], [data-theme='nissan'], [data-theme='renault'], [data-theme='gm'], [data-theme='peugeot-citroen'], [data-theme='bajaj'], [data-theme='geely'])) .app-side-nav button.active {
   border-left-color: #ffffff;
 }
 
@@ -204,10 +176,7 @@
   color: var(--color-muted);
 }
 
-:host-context([data-theme='light']) .app-side-nav small,
-:host-context([data-theme='pink']) .app-side-nav small,
-:host-context([data-theme='red']) .app-side-nav small,
-:host-context([data-theme='green']) .app-side-nav small {
+:host-context(:is([data-theme='light'], [data-theme='pink'], [data-theme='green'], [data-theme='nissan'], [data-theme='renault'], [data-theme='gm'], [data-theme='peugeot-citroen'], [data-theme='bajaj'], [data-theme='geely'])) .app-side-nav small {
   color: rgba(255, 255, 255, 0.74);
 }
 
