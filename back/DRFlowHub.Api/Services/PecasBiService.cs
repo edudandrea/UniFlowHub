@@ -15,7 +15,19 @@ namespace DRFlowHub.Api.Services
     {
         private readonly AppDbContext _context;
         private readonly string _connectionString;
-        private sealed record PecaBiAccessScope(string? CpfVendedor, int? EmpresaNumero);
+        private sealed record PecaBiAccessScope(string? CpfVendedor, int? EmpresaNumero, IReadOnlyCollection<int>? EmpresasPermitidas, bool AcessoGeral);
+
+        private static readonly Dictionary<string, int> PecasBiEmpresaPorAcesso = new(StringComparer.OrdinalIgnoreCase)
+        {
+            ["pecas-bi-renault"] = 1,
+            ["pecas-bi-nissan"] = 2,
+            ["pecas-bi-gm"] = 5,
+            ["pecas-bi-fiat"] = 6,
+            ["pecas-bi-peugeot-citroen"] = 7,
+            ["pecas-bi-bajaj"] = 8,
+            ["pecas-bi-geely"] = 9,
+            ["pecas-bi-mg"] = 10,
+        };
 
         // Ajuste os aliases caso o Oracle use nomes diferentes para margem, canal ou itens.
         private const string BaseCapaSql = @"
@@ -131,7 +143,10 @@ namespace DRFlowHub.Api.Services
                   ON FV.EMPRESA = COALESCE(FMCORI.EMPRESA, FMC.EMPRESA)
                  AND FV.REVENDA = COALESCE(FMCORI.REVENDA, FMC.REVENDA)
                  AND FV.VENDEDOR = FNV.VENDEDOR
-                WHERE TO_CHAR(FMC.DEPARTAMENTO) = '3'
+                WHERE (
+                    TO_CHAR(FMC.DEPARTAMENTO) = '3'
+                    OR (FMC.EMPRESA = 5 AND TO_CHAR(FMC.DEPARTAMENTO) IN ('11', '12'))
+                )
                   AND FMC.STATUS = 'F'
                   AND (
                       TT.TIPO = 'E'
@@ -151,9 +166,20 @@ namespace DRFlowHub.Api.Services
                       (TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO = 'N')
                       OR (TT.TIPO = 'E' AND TT.SUBTIPO_TRANSACAO = 'D' AND FMC.FATOPERACAO_ORIGINAL IS NOT NULL)
                   )
+                  AND CASE
+                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
+                        ELSE FMC.TIPO_TRANSACAO
+                     END <> 'O21'
+                  AND (
+                      CASE
+                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
+                        ELSE FMC.TIPO_TRANSACAO
+                      END NOT IN ('G21', 'P71')
+                      OR FMC.EMPRESA = 5
+                  )
                   AND COALESCE(FMC.NFE_SITUACAO, ' ') <> 'D'
                   AND FMC.DTA_ENTRADA_SAIDA BETWEEN :DATA_INICIO AND :DATA_FIM
-                  AND (:EMPRESA IS NULL OR TO_CHAR(FMC.EMPRESA) = :EMPRESA)
+                  AND (:EMPRESA IS NULL OR INSTR(',' || :EMPRESA || ',', ',' || TO_CHAR(FMC.EMPRESA) || ',') > 0)
                   AND (:REVENDA IS NULL OR INSTR(',' || :REVENDA || ',', ',' || TO_CHAR(FMC.REVENDA) || ',') > 0)
                   AND (
                       :CPF_VENDEDOR IS NULL
@@ -176,10 +202,10 @@ namespace DRFlowHub.Api.Services
                   )
                   AND (
                       :CANAL IS NULL
-                      OR CASE
+                      OR INSTR(',' || :CANAL || ',', ',' || CASE
                             WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                             ELSE FMC.TIPO_TRANSACAO
-                         END = :CANAL
+                         END || ',') > 0
                   )
             )";
 
@@ -391,7 +417,10 @@ namespace DRFlowHub.Api.Services
                   ON FMCORI.EMPRESA = FMC.EMPRESA
                  AND FMCORI.REVENDA = FMC.REVENDA
                  AND FMCORI.FATOPERACAO = FMC.FATOPERACAO_ORIGINAL
-                WHERE TO_CHAR(FMC.DEPARTAMENTO) = '3'
+                WHERE (
+                    TO_CHAR(FMC.DEPARTAMENTO) = '3'
+                    OR (FMC.EMPRESA = 5 AND TO_CHAR(FMC.DEPARTAMENTO) IN ('11', '12'))
+                )
                   AND FMC.STATUS = 'F'
                   AND (
                       TT.TIPO = 'E'
@@ -411,10 +440,21 @@ namespace DRFlowHub.Api.Services
                       (TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO = 'N')
                       OR (TT.TIPO = 'E' AND TT.SUBTIPO_TRANSACAO = 'D' AND FMC.FATOPERACAO_ORIGINAL IS NOT NULL)
                   )
+                  AND CASE
+                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
+                        ELSE FMC.TIPO_TRANSACAO
+                     END <> 'O21'
+                  AND (
+                      CASE
+                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
+                        ELSE FMC.TIPO_TRANSACAO
+                      END NOT IN ('G21', 'P71')
+                      OR FMC.EMPRESA = 5
+                  )
                   AND PIE.TIPO_INDUSTRIALIZACAO IS NULL
                   AND COALESCE(FMC.NFE_SITUACAO, ' ') <> 'D'
                   AND FMC.DTA_ENTRADA_SAIDA BETWEEN :DATA_INICIO AND :DATA_FIM
-                  AND (:EMPRESA IS NULL OR TO_CHAR(FMC.EMPRESA) = :EMPRESA)
+                  AND (:EMPRESA IS NULL OR INSTR(',' || :EMPRESA || ',', ',' || TO_CHAR(FMC.EMPRESA) || ',') > 0)
                   AND (:REVENDA IS NULL OR INSTR(',' || :REVENDA || ',', ',' || TO_CHAR(FMC.REVENDA) || ',') > 0)
                   AND (
                       :CPF_VENDEDOR IS NULL
@@ -437,10 +477,10 @@ namespace DRFlowHub.Api.Services
                   )
                   AND (
                       :CANAL IS NULL
-                      OR CASE
+                      OR INSTR(',' || :CANAL || ',', ',' || CASE
                             WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
                             ELSE FMC.TIPO_TRANSACAO
-                         END = :CANAL
+                         END || ',') > 0
                   )
                 GROUP BY FMI.ITEM_ESTOQUE, PIE.DES_ITEM_ESTOQUE, PIE.GRUPO
                 ORDER BY FATURAMENTO DESC
@@ -476,6 +516,10 @@ namespace DRFlowHub.Api.Services
 
                 empresa = accessScope.EmpresaNumero.Value.ToString();
             }
+            else if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
+            {
+                empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
+            }
 
             await using var connection = new OracleConnection(_connectionString);
             await connection.OpenAsync();
@@ -488,10 +532,10 @@ namespace DRFlowHub.Api.Services
                 ? await LoadVendedoresAsync(connection, dataInicio, dataFim, empresa, revenda, canal)
                 : new List<PecaVendedorDto>();
             var clientes = podeVerClientes
-                ? await LoadTopClientesAsync(connection, TopCompradoresSql, dataInicio, dataFim, empresa, revenda, cpfVendedor)
+                ? await LoadTopClientesAsync(connection, TopCompradoresSql, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal)
                 : new List<PecaClienteDto>();
             var seguradoras = podeVerRankingVendedores
-                ? await LoadTopClientesAsync(connection, TopSeguradorasSql, dataInicio, dataFim, empresa, revenda, cpfVendedor)
+                ? await LoadTopClientesAsync(connection, TopSeguradorasSql, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal)
                 : new List<PecaClienteDto>();
             var pecas = await LoadTopPecasAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
             await ApplyMetasAsync(vendedores);
@@ -560,8 +604,20 @@ namespace DRFlowHub.Api.Services
 
         private async Task<PecaBiAccessScope> GetAccessScopeAsync(string role, int userId)
         {
+            var perfilAcessos = await GetPerfilAcessosAsync(role);
+            var acessoGeral = RoleScope.IsAdmin(role)
+                || RoleScope.IsTI(role)
+                || RoleScope.IsGerenteGeralPecas(role)
+                || perfilAcessos.Contains("vendas-pecas");
+            var empresasPermitidas = perfilAcessos
+                .Where(PecasBiEmpresaPorAcesso.ContainsKey)
+                .Select(acesso => PecasBiEmpresaPorAcesso[acesso])
+                .Distinct()
+                .OrderBy(empresa => empresa)
+                .ToList();
+
             if (!RoleScope.IsVendedorPecas(role) && !RoleScope.IsGerentePecas(role))
-                return new PecaBiAccessScope(null, null);
+                return new PecaBiAccessScope(null, null, empresasPermitidas, acessoGeral);
 
             var user = await _context.User
                 .Include(user => user.Unidade)
@@ -578,14 +634,14 @@ namespace DRFlowHub.Api.Services
                 if (string.IsNullOrWhiteSpace(cpf))
                     throw new UnauthorizedAccessException("CPF do vendedor nao encontrado no cadastro do usuario.");
 
-                return new PecaBiAccessScope(cpf, null);
+                return new PecaBiAccessScope(cpf, null, empresasPermitidas, acessoGeral);
             }
 
             var empresaNumero = user.Unidade?.EmpresaCadastro?.Numero;
             if (!empresaNumero.HasValue || empresaNumero.Value <= 0)
                 throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
 
-            return new PecaBiAccessScope(null, empresaNumero);
+            return new PecaBiAccessScope(null, empresaNumero, empresasPermitidas, acessoGeral);
         }
 
         private static async Task<List<PecaVendaMensalDto>> LoadVendasMensaisAsync(OracleConnection connection, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, object canal)
@@ -645,10 +701,10 @@ namespace DRFlowHub.Api.Services
             return items;
         }
 
-        private static async Task<List<PecaClienteDto>> LoadTopClientesAsync(OracleConnection connection, string sql, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor)
+        private static async Task<List<PecaClienteDto>> LoadTopClientesAsync(OracleConnection connection, string sql, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, object canal)
         {
             var items = new List<PecaClienteDto>();
-            await using var command = CreateCommand(connection, sql, dataInicio, dataFim, empresa, revenda, cpfVendedor, DBNull.Value);
+            await using var command = CreateCommand(connection, sql, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
@@ -780,17 +836,49 @@ namespace DRFlowHub.Api.Services
                 && !RoleScope.IsGerenteGeralPecas(role)
                 && !RoleScope.IsGerentePecas(role)
                 && !RoleScope.IsVendedorPecas(role)
-                && !await HasPerfilAccessAsync(role, "vendas-pecas"))
+                && !await HasAnyPecasBiPerfilAccessAsync(role))
             {
                 throw new UnauthorizedAccessException("Acesso permitido somente para Gerente Geral de Pecas, Gerente de Pecas, Vendedor de Pecas, Admin ou TI.");
             }
         }
 
-        private async Task<bool> HasPerfilAccessAsync(string role, string access)
+        private async Task<bool> HasAnyPecasBiPerfilAccessAsync(string role)
+        {
+            var acessos = await GetPerfilAcessosAsync(role);
+            return acessos.Contains("vendas-pecas") || acessos.Any(PecasBiEmpresaPorAcesso.ContainsKey);
+        }
+
+        private async Task<HashSet<string>> GetPerfilAcessosAsync(string role)
         {
             var perfil = PerfisService.NormalizePerfilName(role);
-            return await _context.PerfilSistema
-                .AnyAsync(p => p.Nome == perfil && p.Acessos.Any(a => a.Chave == access));
+            var acessos = await _context.PerfilSistema
+                .Where(p => p.Nome == perfil)
+                .SelectMany(p => p.Acessos.Select(a => a.Chave))
+                .ToListAsync();
+
+            return acessos.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private static object ApplyEmpresaScope(object requestedEmpresa, IReadOnlyCollection<int> empresasPermitidas)
+        {
+            if (requestedEmpresa == DBNull.Value)
+                return string.Join(",", empresasPermitidas);
+
+            var requested = requestedEmpresa.ToString()?.Trim() ?? string.Empty;
+            var requestedEmpresas = requested
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(value => int.TryParse(value, out var empresa) ? empresa : 0)
+                .Where(empresa => empresa > 0)
+                .Distinct()
+                .ToList();
+
+            if (requestedEmpresas.Count == 0)
+                return string.Join(",", empresasPermitidas);
+
+            if (requestedEmpresas.Any(empresa => !empresasPermitidas.Contains(empresa)))
+                throw new UnauthorizedAccessException("Perfil sem acesso a empresa selecionada no B.I de pecas.");
+
+            return string.Join(",", requestedEmpresas);
         }
 
         private static object NormalizeFilter(string? value)

@@ -75,4 +75,12 @@ export class ChamadosTIService {
   downloadAttachment(id: number): Observable<Blob> {
     return this.http.get(`${API_URL}/chamadosti/${id}/anexo`, { responseType: 'blob' });
   }
+
+  downloadComunicacoes(id: number): Observable<Blob> {
+    return this.http.get(`${API_URL}/chamadosti/${id}/comunicacoes/download`, { responseType: 'blob' });
+  }
+
+  markComunicacaoRead(id: number, comunicacaoId: number): Observable<ChamadoTIComunicacao> {
+    return this.http.post<ChamadoTIComunicacao>(`${API_URL}/chamadosti/${id}/comunicacoes/${comunicacaoId}/lida`, {});
+  }
 }

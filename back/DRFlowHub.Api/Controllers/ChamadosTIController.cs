@@ -1,8 +1,11 @@
 using System.Security.Claims;
 using DRFlowHub.Api.Dtos.ChamadosTI;
+using DRFlowHub.Api.Hubs;
 using DRFlowHub.Api.Services;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.SignalR;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
 
 namespace DRFlowHub.Api.Controllers
 {
@@ -13,6 +16,7 @@ namespace DRFlowHub.Api.Controllers
     {
         private readonly ChamadosTIService _service;
         private readonly IWebHostEnvironment _environment;
+        private readonly IHubContext<ChamadosTIChatHub> _chatHub;
         private static readonly HashSet<string> AllowedExtensions = new(StringComparer.OrdinalIgnoreCase)
         {
             ".jpg",
@@ -25,10 +29,14 @@ namespace DRFlowHub.Api.Controllers
             ".docx"
         };
 
-        public ChamadosTIController(ChamadosTIService service, IWebHostEnvironment environment)
+        public ChamadosTIController(
+            ChamadosTIService service,
+            IWebHostEnvironment environment,
+            IHubContext<ChamadosTIChatHub> chatHub)
         {
             _service = service;
             _environment = environment;
+            _chatHub = chatHub;
         }
 
         [HttpGet]
@@ -88,11 +96,15 @@ namespace DRFlowHub.Api.Controllers
         }
 
         [HttpPost("{id:int}/comunicacoes")]
-        public IActionResult AddComunicacao(int id, [FromBody] ChamadoTIComunicacaoCreateDto dto)
+        public async Task<IActionResult> AddComunicacao(int id, [FromBody] ChamadoTIComunicacaoCreateDto dto)
         {
             try
             {
                 var comunicacao = _service.AddComunicacao(id, dto, GetRole(), GetUserId(), GetAcessos());
+                await _chatHub.Clients.Group(ChamadosTIChatHub.GroupName(id)).SendAsync("MensagemRecebida", comunicacao);
+                var ownerUserId = _service.GetOwnerUserId(id);
+                if (ownerUserId > 0 && ownerUserId != comunicacao.AutorUserId)
+                    await _chatHub.Clients.User(ownerUserId.ToString()).SendAsync("NovaMensagemChamado", comunicacao);
 
                 return Ok(new
                 {
@@ -104,6 +116,41 @@ namespace DRFlowHub.Api.Controllers
             catch (InvalidOperationException ex)
             {
                 return BadRequest(ex.Message);
+            }
+        }
+
+        [HttpGet("{id:int}/comunicacoes/download")]
+        public IActionResult DownloadComunicacoes(int id)
+        {
+            try
+            {
+                var content = _service.BuildComunicacoesDownload(id, GetRole(), GetUserId(), GetAcessos());
+                var bytes = Encoding.UTF8.GetBytes(content);
+                return File(bytes, "text/plain; charset=utf-8", $"chamado-{id}-historico-chat.txt");
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+            }
+        }
+
+        [HttpPost("{id:int}/comunicacoes/{comunicacaoId:int}/lida")]
+        public async Task<IActionResult> MarcarComunicacaoLida(int id, int comunicacaoId)
+        {
+            try
+            {
+                var comunicacao = _service.MarcarComunicacaoLida(id, comunicacaoId, GetRole(), GetUserId(), GetAcessos());
+                await _chatHub.Clients.Group(ChamadosTIChatHub.GroupName(id)).SendAsync("MensagemLida", comunicacao);
+
+                return Ok(comunicacao);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+            }
+            catch (KeyNotFoundException ex)
+            {
+                return NotFound(ex.Message);
             }
         }
 

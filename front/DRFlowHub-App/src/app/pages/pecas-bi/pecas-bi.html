@@ -63,14 +63,23 @@
           </div>
         }
       </div>
-      <label>
-        Canal
-        <select [value]="canal()" (change)="setCanal($any($event.target).value)">
-          @for (item of canais(); track item) {
-            <option [value]="item">{{ item === 'Todos' ? 'Todos' : channelLabel(item) }}</option>
-          }
-        </select>
-      </label>
+      <div class="filter-field canal-picker">
+        <span>Transações</span>
+        <button class="picker-trigger" type="button" (click)="canalPickerOpen.set(!canalPickerOpen())">
+          {{ canaisSelecionadosLabel() }}
+        </button>
+        @if (canalPickerOpen()) {
+          <div class="picker-menu">
+            <button type="button" (click)="clearCanais()">Todas as transações</button>
+            @for (item of canais(); track item) {
+              <label>
+                <input type="checkbox" [checked]="isCanalSelected(item)" (change)="toggleCanal(item)" />
+                {{ channelLabel(item) }}
+              </label>
+            }
+          </div>
+        }
+      </div>
       <label>
         Data inicial
         <input type="date" [ngModel]="dataInicio()" (ngModelChange)="dataInicio.set($event)" />

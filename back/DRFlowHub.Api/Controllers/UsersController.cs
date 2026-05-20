@@ -93,23 +93,6 @@ namespace DRFlowHub.Api.Controllers
             }
         }
 
-        [HttpPost("me/rustdesk")]
-        public IActionResult RegisterRustDesk([FromBody] UserRustDeskRegisterDto dto)
-        {
-            try
-            {
-                return Ok(_service.RegisterRustDesk(GetCurrentUserId(), dto));
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(ex.Message);
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Unauthorized(ex.Message);
-            }
-        }
-
         private int GetCurrentUserId()
         {
             var value = User.FindFirstValue(ClaimTypes.NameIdentifier);

@@ -3,6 +3,7 @@ using DRFlowHub.Api.Dtos.ChamadosTI;
 using DRFlowHub.Api.Models;
 using DRFlowHub.Api.Security;
 using Microsoft.EntityFrameworkCore;
+using System.Text;
 
 namespace DRFlowHub.Api.Services
 {
@@ -10,13 +11,11 @@ namespace DRFlowHub.Api.Services
     {
         private readonly IChamadosTIRepo _repo;
         private readonly IUserRepo _userRepo;
-        private readonly IConfiguration _configuration;
 
-        public ChamadosTIService(IChamadosTIRepo repo, IUserRepo userRepo, IConfiguration configuration)
+        public ChamadosTIService(IChamadosTIRepo repo, IUserRepo userRepo)
         {
             _repo = repo;
             _userRepo = userRepo;
-            _configuration = configuration;
         }
 
         public List<ChamadoTIResponseDto> List(string role, int userId, IEnumerable<string> acessos)
@@ -60,17 +59,12 @@ namespace DRFlowHub.Api.Services
                 Status = string.IsNullOrWhiteSpace(dto.Status) ? "Aberto" : dto.Status.Trim(),
                 Responsavel = dto.Responsavel?.Trim() ?? string.Empty,
                 AcessoRemotoUrl = dto.AcessoRemotoUrl?.Trim() ?? string.Empty,
-                RustDeskId = string.IsNullOrWhiteSpace(dto.RustDeskId) ? ownerUser.RustDeskId : dto.RustDeskId.Trim(),
-                RustDeskSenha = string.IsNullOrWhiteSpace(dto.RustDeskSenha) ? ownerUser.RustDeskSenha : dto.RustDeskSenha.Trim(),
-                RustDeskServidor = GetRustDeskServer(dto.RustDeskServidor),
-                RustDeskKey = GetRustDeskKey(dto.RustDeskKey),
+                AcessoRemotoSenha = dto.AcessoRemotoSenha?.Trim() ?? string.Empty,
                 EquipamentoNome = string.IsNullOrWhiteSpace(dto.EquipamentoNome) || dto.EquipamentoNome == "Nao informado pelo navegador"
-                    ? ownerUser.RustDeskHostname
+                    ? string.Empty
                     : dto.EquipamentoNome.Trim(),
                 EquipamentoIp = dto.EquipamentoIp?.Trim() ?? string.Empty,
-                EquipamentoSistemaOperacional = string.IsNullOrWhiteSpace(dto.EquipamentoSistemaOperacional)
-                    ? ownerUser.RustDeskSistemaOperacional
-                    : dto.EquipamentoSistemaOperacional.Trim(),
+                EquipamentoSistemaOperacional = dto.EquipamentoSistemaOperacional?.Trim() ?? string.Empty,
                 Observacoes = dto.Observacoes?.Trim() ?? string.Empty,
                 AnexoImagemUrl = imagemUrl,
                 DataAbertura = DateTime.UtcNow,
@@ -104,10 +98,7 @@ namespace DRFlowHub.Api.Services
             chamado.Status = string.IsNullOrWhiteSpace(dto.Status) ? chamado.Status : dto.Status.Trim();
             chamado.Responsavel = dto.Responsavel?.Trim() ?? string.Empty;
             chamado.AcessoRemotoUrl = dto.AcessoRemotoUrl?.Trim() ?? string.Empty;
-            chamado.RustDeskId = dto.RustDeskId?.Trim() ?? string.Empty;
-            chamado.RustDeskSenha = dto.RustDeskSenha?.Trim() ?? string.Empty;
-            chamado.RustDeskServidor = GetRustDeskServer(dto.RustDeskServidor);
-            chamado.RustDeskKey = GetRustDeskKey(dto.RustDeskKey);
+            chamado.AcessoRemotoSenha = dto.AcessoRemotoSenha?.Trim() ?? string.Empty;
             chamado.EquipamentoNome = dto.EquipamentoNome?.Trim() ?? chamado.EquipamentoNome;
             chamado.EquipamentoIp = dto.EquipamentoIp?.Trim() ?? chamado.EquipamentoIp;
             chamado.EquipamentoSistemaOperacional = dto.EquipamentoSistemaOperacional?.Trim() ?? chamado.EquipamentoSistemaOperacional;
@@ -131,11 +122,28 @@ namespace DRFlowHub.Api.Services
                 .ToList();
         }
 
+        public void EnsureCanAccess(int id, string role, int currentUserId, IEnumerable<string> acessos)
+        {
+            GetAccessibleChamado(id, role, currentUserId, acessos, asNoTracking: true);
+        }
+
+        public int GetOwnerUserId(int id)
+        {
+            return _repo.Query()
+                .AsNoTracking()
+                .Where(s => s.Id == id)
+                .Select(s => s.Userid)
+                .FirstOrDefault();
+        }
+
         public ChamadoTIComunicacaoResponseDto AddComunicacao(int id, ChamadoTIComunicacaoCreateDto dto, string role, int currentUserId, IEnumerable<string> acessos)
         {
             var chamado = GetAccessibleChamado(id, role, currentUserId, acessos);
             if (IsFinalizado(chamado))
                 throw new InvalidOperationException("Chamados encerrados ou cancelados nao permitem novas mensagens.");
+
+            if (string.IsNullOrWhiteSpace(chamado.Responsavel))
+                throw new InvalidOperationException("Defina um responsavel pelo chamado antes de usar o chat.");
 
             var mensagem = dto.Mensagem?.Trim() ?? string.Empty;
             if (string.IsNullOrWhiteSpace(mensagem))
@@ -156,6 +164,64 @@ namespace DRFlowHub.Api.Services
             };
 
             _repo.AddComunicacao(comunicacao);
+            _repo.Save();
+
+            return MapComunicacao(comunicacao);
+        }
+
+        public string BuildComunicacoesDownload(int id, string role, int currentUserId, IEnumerable<string> acessos)
+        {
+            if (!CanManage(role, acessos))
+                throw new UnauthorizedAccessException("Somente usuarios de T.I. podem baixar o historico do chat.");
+
+            var chamado = GetAccessibleChamado(id, role, currentUserId, acessos, asNoTracking: true);
+            var mensagens = _repo.QueryComunicacoes()
+                .AsNoTracking()
+                .Where(s => s.ChamadoTIId == id)
+                .OrderBy(s => s.DataCriacao)
+                .ToList();
+
+            var builder = new StringBuilder();
+            builder.AppendLine($"Historico do chat - Chamado #{chamado.Id}");
+            builder.AppendLine($"Titulo: {chamado.Titulo}");
+            builder.AppendLine($"Solicitante: {chamado.Solicitante}");
+            builder.AppendLine($"Unidade: {chamado.Unidade}");
+            builder.AppendLine($"Departamento: {chamado.Departamento}");
+            builder.AppendLine($"Status: {chamado.Status}");
+            builder.AppendLine($"Gerado em: {DateTime.UtcNow:dd/MM/yyyy HH:mm} UTC");
+            builder.AppendLine(new string('-', 72));
+
+            if (mensagens.Count == 0)
+            {
+                builder.AppendLine("Nenhuma mensagem registrada neste chamado.");
+                return builder.ToString();
+            }
+
+            foreach (var mensagem in mensagens)
+            {
+                builder.AppendLine($"[{mensagem.DataCriacao:dd/MM/yyyy HH:mm}] {mensagem.AutorNome} ({mensagem.AutorRole})");
+                builder.AppendLine(mensagem.Mensagem);
+                builder.AppendLine();
+            }
+
+            return builder.ToString();
+        }
+
+        public ChamadoTIComunicacaoResponseDto MarcarComunicacaoLida(int id, int comunicacaoId, string role, int currentUserId, IEnumerable<string> acessos)
+        {
+            GetAccessibleChamado(id, role, currentUserId, acessos, asNoTracking: true);
+
+            var comunicacao = _repo.QueryComunicacoes()
+                .FirstOrDefault(s => s.Id == comunicacaoId && s.ChamadoTIId == id);
+
+            if (comunicacao is null)
+                throw new KeyNotFoundException("Mensagem nao encontrada.");
+
+            if (comunicacao.AutorUserId == currentUserId)
+                return MapComunicacao(comunicacao);
+
+            comunicacao.DataLeitura ??= DateTime.UtcNow;
+            _repo.UpdateComunicacao(comunicacao);
             _repo.Save();
 
             return MapComunicacao(comunicacao);
@@ -291,10 +357,7 @@ namespace DRFlowHub.Api.Services
                 Status = s.Status,
                 Responsavel = s.Responsavel,
                 AcessoRemotoUrl = s.AcessoRemotoUrl,
-                RustDeskId = s.RustDeskId,
-                RustDeskSenha = s.RustDeskSenha,
-                RustDeskServidor = s.RustDeskServidor,
-                RustDeskKey = s.RustDeskKey,
+                AcessoRemotoSenha = s.AcessoRemotoSenha,
                 EquipamentoNome = s.EquipamentoNome,
                 EquipamentoIp = s.EquipamentoIp,
                 EquipamentoSistemaOperacional = s.EquipamentoSistemaOperacional,
@@ -312,20 +375,6 @@ namespace DRFlowHub.Api.Services
                 UltimaMovimentacao = GetUltimaMovimentacao(s),
                 Reaberto = s.Reaberto
             };
-        }
-
-        private string GetRustDeskServer(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? _configuration["RustDesk:Server"] ?? string.Empty
-                : value.Trim();
-        }
-
-        private string GetRustDeskKey(string? value)
-        {
-            return string.IsNullOrWhiteSpace(value)
-                ? _configuration["RustDesk:Key"] ?? string.Empty
-                : value.Trim();
         }
 
         private static DateTime GetUltimaMovimentacao(ChamadosTI chamado)
@@ -375,7 +424,8 @@ namespace DRFlowHub.Api.Services
                 AutorNome = s.AutorNome,
                 AutorRole = s.AutorRole,
                 AutorUserId = s.AutorUserId,
-                DataCriacao = s.DataCriacao
+                DataCriacao = s.DataCriacao,
+                DataLeitura = s.DataLeitura
             };
         }
     }

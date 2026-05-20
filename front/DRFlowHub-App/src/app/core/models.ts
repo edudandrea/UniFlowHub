@@ -8,9 +8,6 @@ export interface User {
   role: Role;
   departamento: string;
   cargo: string;
-  rustDeskId: string;
-  rustDeskHostname: string;
-  rustDeskSistemaOperacional: string;
   ativo: boolean;
   unidadeId?: number | null;
   unidadeNome: string;
@@ -18,8 +15,8 @@ export interface User {
   acessos: string[];
 }
 
-export type UserCreatePayload = Omit<User, 'id' | 'unidadeNome' | 'rustDeskId' | 'rustDeskHostname' | 'rustDeskSistemaOperacional' | 'acessos'> & { senha: string };
-export type UserUpdatePayload = Omit<User, 'id' | 'unidadeNome' | 'rustDeskId' | 'rustDeskHostname' | 'rustDeskSistemaOperacional' | 'acessos'> & { senha?: string };
+export type UserCreatePayload = Omit<User, 'id' | 'unidadeNome' | 'acessos'> & { senha: string };
+export type UserUpdatePayload = Omit<User, 'id' | 'unidadeNome' | 'acessos'> & { senha?: string };
 export type UserProfileUpdatePayload = Pick<User, 'nome' | 'cpf' | 'departamento' | 'cargo' | 'dataNascimento'>;
 
 export interface Unidade {
@@ -98,10 +95,7 @@ export interface ChamadoTI {
   status: string;
   responsavel: string;
   acessoRemotoUrl: string;
-  rustDeskId: string;
-  rustDeskSenha: string;
-  rustDeskServidor: string;
-  rustDeskKey: string;
+  acessoRemotoSenha: string;
   equipamentoNome: string;
   equipamentoIp: string;
   equipamentoSistemaOperacional: string;
@@ -129,6 +123,7 @@ export interface ChamadoTIComunicacao {
   autorRole: string;
   autorUserId: number;
   dataCriacao: string;
+  dataLeitura?: string | null;
 }
 
 export interface SolicitacaoRHComunicacao {

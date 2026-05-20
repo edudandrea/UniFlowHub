@@ -1,9 +1,10 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterOutlet } from '@angular/router';
 import { NgxSpinnerModule } from 'ngx-spinner';
 import { filter } from 'rxjs';
 import { AuthService } from './core/auth.service';
+import { ChatAlertService } from './core/chat-alert.service';
 import { ProfileDialogComponent } from './core/profile-dialog.component';
 import { ThemeService } from './core/theme.service';
 import { Role } from './core/models';
@@ -14,7 +15,7 @@ interface ShellLink {
   route: string;
   enabled: boolean;
   roles?: Role[];
-  access?: string;
+  access?: string | string[];
   adminAccess?: string;
   hiddenForRoles?: Role[];
   userRoute?: string;
@@ -38,6 +39,18 @@ const SPINNER_BACKDROP_BY_ROLE: Record<Role, string> = {
   Usuario: 'rgba(23, 32, 51, 0.70)',
 };
 
+const PECAS_BI_ACCESSES = [
+  'vendas-pecas',
+  'pecas-bi-renault',
+  'pecas-bi-nissan',
+  'pecas-bi-gm',
+  'pecas-bi-fiat',
+  'pecas-bi-bajaj',
+  'pecas-bi-peugeot-citroen',
+  'pecas-bi-mg',
+  'pecas-bi-geely',
+];
+
 @Component({
   selector: 'app-root',
   imports: [RouterOutlet, ProfileDialogComponent, NgxSpinnerModule],
@@ -49,6 +62,7 @@ export class App {
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
   private readonly theme = inject(ThemeService);
+  readonly chatAlert = inject(ChatAlertService);
 
   readonly currentUrl = signal(this.router.url);
   readonly expandedMenus = signal<string[]>([]);
@@ -94,7 +108,7 @@ export class App {
         { label: 'BI Venda de Veiculos', description: 'Indicadores comerciais', route: '/veiculos/bi-vendas', enabled: true, access: 'veiculos-bi' },
       ],
     },
-    { label: 'Vendas Pecas', description: 'B.I comercial de pecas', route: '/vendas-pecas', enabled: true, access: 'vendas-pecas' },
+    { label: 'Vendas Pecas', description: 'B.I comercial de pecas', route: '/vendas-pecas', enabled: true, access: PECAS_BI_ACCESSES },
     { label: 'Financeiro', description: 'Fluxo financeiro', route: '/hub', enabled: false },
     { label: 'Administrativo', description: 'Demandas internas', route: '/hub', enabled: false },
     { label: 'Operacional', description: 'Solicitacoes operacionais', route: '/hub', enabled: false },
@@ -114,6 +128,14 @@ export class App {
   readonly visibleShellLinks = computed(() => this.sortShellLinks(this.shellLinks.filter((link) => this.canShowParentLink(link))));
 
   constructor() {
+    effect(() => {
+      if (this.auth.isLoggedIn()) {
+        void this.chatAlert.start();
+      } else {
+        void this.chatAlert.stop();
+      }
+    });
+
     this.router.events
       .pipe(
         filter((event): event is NavigationEnd => event instanceof NavigationEnd),
@@ -178,7 +200,7 @@ export class App {
     }
 
     if (link.access) {
-      return this.auth.hasAccess(link.access);
+      return this.hasLinkAccess(link.access);
     }
 
     if (link.children?.length) {
@@ -194,7 +216,7 @@ export class App {
     }
 
     if (link.access) {
-      return this.auth.hasAccess(link.access);
+      return this.hasLinkAccess(link.access);
     }
 
     return !link.roles || this.auth.hasAnyRole(link.roles) || !!link.userRoute;
@@ -206,6 +228,10 @@ export class App {
     }
 
     return link.roles && !this.auth.hasAnyRole(link.roles) ? (link.userRoute ?? link.route) : link.route;
+  }
+
+  private hasLinkAccess(access: string | string[]): boolean {
+    return Array.isArray(access) ? this.auth.hasAnyAccess(access) : this.auth.hasAccess(access);
   }
 
   private sortShellLinks(links: ShellLink[], keepDashboardFirst = true): ShellLink[] {

@@ -64,3 +64,19 @@
   <router-outlet />
 </section>
 <app-profile-dialog />
+
+@if (chatAlert.message(); as msg) {
+  <div class="chat-alert-backdrop" role="alertdialog" aria-modal="true" aria-label="Nova mensagem do chamado">
+    <section class="chat-alert-modal">
+      <header>
+        <p>Nova mensagem no chamado #{{ msg.chamadoTIId }}</p>
+        <h2>{{ msg.autorNome }}</h2>
+      </header>
+      <blockquote>{{ msg.mensagem }}</blockquote>
+      <div class="chat-alert-actions">
+        <button type="button" class="chat-alert-primary" (click)="chatAlert.respond()">Responder agora</button>
+        <button type="button" class="chat-alert-secondary" (click)="chatAlert.dismiss()">Li a mensagem</button>
+      </div>
+    </section>
+  </div>
+}

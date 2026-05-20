@@ -12,10 +12,7 @@ namespace DRFlowHub.Api.Dtos.ChamadosTI
         public string? Status { get; set; }
         public string? Responsavel { get; set; }
         public string? AcessoRemotoUrl { get; set; }
-        public string? RustDeskId { get; set; }
-        public string? RustDeskSenha { get; set; }
-        public string? RustDeskServidor { get; set; }
-        public string? RustDeskKey { get; set; }
+        public string? AcessoRemotoSenha { get; set; }
         public string? EquipamentoNome { get; set; }
         public string? EquipamentoIp { get; set; }
         public string? EquipamentoSistemaOperacional { get; set; }

@@ -18,10 +18,10 @@ namespace DRFlowHub.Api.Models
         public string Status { get; set; } = string.Empty;
         public string Responsavel { get; set; } = string.Empty;
         public string AcessoRemotoUrl { get; set; } = string.Empty;
-        public string RustDeskId { get; set; } = string.Empty;
-        public string RustDeskSenha { get; set; } = string.Empty;
-        public string RustDeskServidor { get; set; } = string.Empty;
-        public string RustDeskKey { get; set; } = string.Empty;
+        private const string LegacyRemoteAccessPasswordColumn = "Rust" + "DeskSenha";
+
+        [Column(LegacyRemoteAccessPasswordColumn)]
+        public string AcessoRemotoSenha { get; set; } = string.Empty;
         public string EquipamentoNome { get; set; } = string.Empty;
         public string EquipamentoIp { get; set; } = string.Empty;
         public string EquipamentoSistemaOperacional { get; set; } = string.Empty;

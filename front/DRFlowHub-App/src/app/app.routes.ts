@@ -18,6 +18,18 @@ import { VeiculosBiPage } from './pages/veiculos-bi/veiculos-bi';
 import { EmpresasRevendasPage } from './pages/empresas-revendas/empresas-revendas';
 import { PerfisPage } from './pages/perfis/perfis';
 
+const PECAS_BI_ACCESSES = [
+  'vendas-pecas',
+  'pecas-bi-renault',
+  'pecas-bi-nissan',
+  'pecas-bi-gm',
+  'pecas-bi-fiat',
+  'pecas-bi-bajaj',
+  'pecas-bi-peugeot-citroen',
+  'pecas-bi-mg',
+  'pecas-bi-geely',
+];
+
 export const routes: Routes = [
   { path: 'login', component: LoginPage },
   {
@@ -73,7 +85,7 @@ export const routes: Routes = [
   {
     path: 'vendas-pecas',
     component: PecasBiPage,
-    canActivate: [accessGuard(['vendas-pecas'])],
+    canActivate: [accessGuard(PECAS_BI_ACCESSES)],
   },
   {
     path: 'estoque/veiculos',

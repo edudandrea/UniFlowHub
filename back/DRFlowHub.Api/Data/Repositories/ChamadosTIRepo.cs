@@ -16,5 +16,10 @@ namespace DRFlowHub.Api.Data.Repositories
         {
             _context.ChamadoTIComunicacao.Add(entity);
         }
+
+        public void UpdateComunicacao(ChamadoTIComunicacao entity)
+        {
+            _context.ChamadoTIComunicacao.Update(entity);
+        }
     }
 }

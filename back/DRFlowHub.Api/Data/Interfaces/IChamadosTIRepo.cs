@@ -6,5 +6,6 @@ namespace DRFlowHub.Api.Data.Interfaces
     {
         IQueryable<ChamadoTIComunicacao> QueryComunicacoes();
         void AddComunicacao(ChamadoTIComunicacao entity);
+        void UpdateComunicacao(ChamadoTIComunicacao entity);
     }
 }

@@ -14,6 +14,7 @@ namespace DRFlowHub.Api.Models
         public string AutorRole { get; set; } = string.Empty;
         public int AutorUserId { get; set; }
         public DateTime DataCriacao { get; set; }
+        public DateTime? DataLeitura { get; set; }
         public ChamadosTI? ChamadoTI { get; set; }
     }
 }

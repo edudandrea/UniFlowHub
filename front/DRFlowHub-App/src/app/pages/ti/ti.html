@@ -291,8 +291,8 @@
                 <button
                   class="secondary remote-card-action"
                   type="button"
-                  [disabled]="!item.rustDeskId"
-                  (click)="openRustDeskAccess(item); $event.stopPropagation()"
+                  [disabled]="!item.equipamentoIp || !hasResponsible(item)"
+                  (click)="openRemoteAccess(item); $event.stopPropagation()"
                 >
                   Acesso remoto
                 </button>
@@ -418,6 +418,11 @@
               >
               <small>O IP sera registrado automaticamente ao enviar o chamado.</small>
             </section>
+
+            <label>
+              Senha RealVNC
+              <input formControlName="acessoRemotoSenha" type="password" autocomplete="off" placeholder="Opcional" />
+            </label>
 
             <label>
               Anexo
@@ -566,9 +571,10 @@
                 <button
                   type="button"
                   [class.active]="detailTab() === 'comunicacao'"
-                  (click)="detailTab.set('comunicacao')"
+                  [disabled]="!hasResponsible()"
+                  (click)="openRemoteChat()"
                 >
-                  Comunicação
+                  Chat
                 </button>
               </div>
 
@@ -681,29 +687,35 @@
                     <section class="closure-notes remote-access-card">
                       <div class="info-card-heading">
                         <strong>Acesso remoto</strong>
-                        <small>Servidor RustDesk: {{ rustDeskServerLabel() }}</small>
+                        <small>RealVNC Viewer usando o IP capturado no chamado</small>
                       </div>
                       <div class="remote-device-info">
-                        <span>{{
-                          selected()?.rustDeskId
-                            ? 'Dispositivo RustDesk registrado para este usuario.'
-                            : 'Nenhum dispositivo RustDesk registrado para este usuario.'
-                        }}</span>
-                        @if (selected()?.rustDeskId) {
-                          <small>ID registrado: {{ selected()?.rustDeskId }}</small>
-                        }
+                        <span>{{ selected()?.equipamentoIp ? 'IP pronto para conexao RealVNC.' : 'IP nao capturado para este chamado.' }}</span>
                         @if (selected()?.equipamentoNome) {
                           <small>Equipamento: {{ selected()?.equipamentoNome }}</small>
                         }
+                        @if (selected()?.equipamentoIp) {
+                          <small>IP: {{ selected()?.equipamentoIp }}</small>
+                        }
                       </div>
+                      <label>
+                        Senha RealVNC
+                        <input formControlName="acessoRemotoSenha" type="password" autocomplete="off" />
+                      </label>
                       <div class="attachment-actions">
                         <button
                           class="primary remote-primary"
                           type="button"
-                          [disabled]="!selected()?.rustDeskId"
-                          (click)="openRustDeskAccess()"
+                          [disabled]="!selected()?.equipamentoIp || !hasResponsible()"
+                          (click)="openRemoteAccess()"
                         >
                           Acesso remoto
+                        </button>
+                        <button class="secondary" type="button" (click)="copyRemoteAccessPassword()">
+                          Copiar senha
+                        </button>
+                        <button class="secondary" type="button" [disabled]="!hasResponsible()" (click)="openRemoteChat()">
+                          Abrir chat
                         </button>
                       </div>
                     </section>
@@ -959,9 +971,15 @@
                 }
               } @else {
                 <section class="communication-panel">
+                  @if (canManage()) {
+                    <header class="closure-notes">
+                      <strong>Chat instantaneo do chamado</strong>
+                      <p>Mensagens em tempo real durante o acesso remoto</p>
+                    </header>
+                  }
                   <div class="communication-list">
                     @if (loadingComunicacoes()) {
-                      <p class="empty">Carregando comunicação...</p>
+                      <p class="empty">Carregando chat...</p>
                     } @else if (comunicacoes().length === 0) {
                       <p class="empty">Nenhuma mensagem neste chamado.</p>
                     } @else {
@@ -978,6 +996,9 @@
                             >
                           </div>
                           <p>{{ mensagem.mensagem }}</p>
+                          @if (mensagem.autorUserId === user()?.id) {
+                            <small>{{ mensagem.dataLeitura ? 'Lida' : 'Entregue' }}</small>
+                          }
                         </article>
                       }
                     }
@@ -989,7 +1010,11 @@
                     selected()?.status === 'Cancelado'
                   ) {
                     <p class="notice">
-                      Comunicacao bloqueada para chamados encerrados ou cancelados.
+                      Chat bloqueado para chamados encerrados ou cancelados.
+                    </p>
+                  } @else if (!hasResponsible()) {
+                    <p class="notice">
+                      Defina um responsavel pelo chamado para liberar o chat.
                     </p>
                   } @else {
                     <form class="message-form" [formGroup]="messageForm" (ngSubmit)="sendMessage()">
@@ -998,12 +1023,20 @@
                         <textarea
                           formControlName="mensagem"
                           rows="4"
-                          placeholder="Escreva uma atualizacao para este chamado"
+                          placeholder="Mensagem para o usuario"
+                          (keydown.enter)="sendMessage()"
                         ></textarea>
                       </label>
-                      <button class="primary" type="submit" [disabled]="sendingMessage()">
-                        {{ sendingMessage() ? 'Enviando...' : 'Enviar mensagem' }}
-                      </button>
+                      <div class="attachment-actions">
+                        <button class="primary" type="submit" [disabled]="sendingMessage()">
+                          {{ sendingMessage() ? 'Enviando...' : 'Enviar mensagem' }}
+                        </button>
+                        @if (canManage()) {
+                          <button class="secondary" type="button" (click)="downloadChatHistory()">
+                            Baixar historico
+                          </button>
+                        }
+                      </div>
                     </form>
                   }
                 </section>

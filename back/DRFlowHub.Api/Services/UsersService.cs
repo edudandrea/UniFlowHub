@@ -29,9 +29,6 @@ namespace DRFlowHub.Api.Services
                 Role = u.Role,
                 Departamento = u.Departamento,
                 Cargo = u.Cargo,
-                RustDeskId = u.RustDeskId,
-                RustDeskHostname = u.RustDeskHostname,
-                RustDeskSistemaOperacional = u.RustDeskSistemaOperacional,
                 Ativo = u.Ativo,
                 UnidadeId = u.UnidadeId,
                 UnidadeNome = u.Unidade != null ? u.Unidade.Nome : string.Empty,
@@ -173,25 +170,5 @@ namespace DRFlowHub.Api.Services
             _repo.Save();
         }
 
-        public UserResponseDto RegisterRustDesk(int id, UserRustDeskRegisterDto dto)
-        {
-            var user = _repo.Query().Include(u => u.Unidade).FirstOrDefault(u => u.Id == id);
-            if (user is null)
-                throw new KeyNotFoundException("Usuario nao encontrado.");
-
-            var rustDeskId = dto.RustDeskId?.Trim() ?? string.Empty;
-            if (string.IsNullOrWhiteSpace(rustDeskId))
-                throw new InvalidOperationException("ID RustDesk e obrigatorio.");
-
-            user.RustDeskId = rustDeskId;
-            user.RustDeskSenha = dto.RustDeskSenha?.Trim() ?? string.Empty;
-            user.RustDeskHostname = dto.Hostname?.Trim() ?? string.Empty;
-            user.RustDeskSistemaOperacional = dto.SistemaOperacional?.Trim() ?? string.Empty;
-
-            _repo.Update(user);
-            _repo.Save();
-
-            return MapUsers(_repo.Query().Include(u => u.Unidade).Where(u => u.Id == id)).Single();
-        }
     }
 }

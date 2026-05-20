@@ -7,7 +7,8 @@ import { ToastrService } from 'ngx-toastr';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { HttpErrorResponse } from '@angular/common/http';
 import { BsModalRef, BsModalService } from 'ngx-bootstrap/modal';
-import { Router } from '@angular/router';
+import { ActivatedRoute, Router } from '@angular/router';
+import type { HubConnection } from '@microsoft/signalr';
 import { AuthService } from '../../core/auth.service';
 import { ChamadosTIService } from '../../core/chamados-ti.service';
 import { ChamadoTI, ChamadoTIComunicacao, ChamadoTIPayload, Unidade, User } from '../../core/models';
@@ -25,8 +26,6 @@ const ALLOWED_ATTACHMENT_TYPES = [
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
 ];
 const ALLOWED_ATTACHMENT_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.pdf', '.doc', '.docx'];
-const RUSTDESK_SERVER = '192.168.1.224';
-const RUSTDESK_KEY = '0EEoPPZgEaSLlDamIVqua2oAgP0DTHsiPczrZz4WfiY=';
 type TiTab = 'pendentes' | 'meus' | 'todos' | 'concluidos';
 type TiSortField = 'id' | 'titulo' | 'solicitante' | 'unidade' | 'departamento' | 'prioridade' | 'status' | 'dataAbertura';
 
@@ -50,6 +49,7 @@ export class TiPage implements OnInit, OnDestroy {
   private readonly unidadesService = inject(UnidadesService);
   private readonly sanitizer = inject(DomSanitizer);
   private readonly modalService = inject(BsModalService);
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly toastr = inject(ToastrService);
   private readonly spinner = inject(NgxSpinnerService);
@@ -143,10 +143,13 @@ export class TiPage implements OnInit, OnDestroy {
   private satisfactionModalRef?: BsModalRef;
   private communicationRefreshId: ReturnType<typeof setInterval> | null = null;
   private ticketMovementRefreshId: ReturnType<typeof setInterval> | null = null;
+  private chatConnection: HubConnection | null = null;
+  private chatChamadoId: number | null = null;
   private knownTicketMovements = new Map<number, string>();
   private movementAlertSequence = 0;
 
   @ViewChild('anexoInput') private anexoInput?: ElementRef<HTMLInputElement>;
+  @ViewChild('ticketModalTemplate') private ticketModalTemplate?: TemplateRef<void>;
 
   readonly form = this.fb.nonNullable.group({
     titulo: ['', Validators.required],
@@ -159,10 +162,7 @@ export class TiPage implements OnInit, OnDestroy {
     status: ['Aberto', Validators.required],
     responsavel: [''],
     acessoRemotoUrl: [''],
-    rustDeskId: [''],
-    rustDeskSenha: [''],
-    rustDeskServidor: [RUSTDESK_SERVER],
-    rustDeskKey: [RUSTDESK_KEY],
+    acessoRemotoSenha: [''],
     equipamentoNome: [''],
     equipamentoIp: [''],
     equipamentoSistemaOperacional: [''],
@@ -180,10 +180,7 @@ export class TiPage implements OnInit, OnDestroy {
     status: ['', Validators.required],
     responsavel: [''],
     acessoRemotoUrl: [''],
-    rustDeskId: [''],
-    rustDeskSenha: [''],
-    rustDeskServidor: [''],
-    rustDeskKey: [''],
+    acessoRemotoSenha: [''],
     equipamentoNome: [''],
     equipamentoIp: [''],
     equipamentoSistemaOperacional: [''],
@@ -230,6 +227,7 @@ export class TiPage implements OnInit, OnDestroy {
   ngOnDestroy(): void {
     this.stopCommunicationRefresh();
     this.stopTicketMovementRefresh();
+    void this.disconnectChat();
   }
 
   loadUnidades(): void {
@@ -257,6 +255,7 @@ export class TiPage implements OnInit, OnDestroy {
         if (!this.selected() && firstVisible) {
           this.select(firstVisible);
         }
+        this.openRequestedChat(items);
       },
       error: () => {
         this.loading.set(false);
@@ -423,10 +422,7 @@ export class TiPage implements OnInit, OnDestroy {
           status: 'Aberto',
           responsavel: '',
           acessoRemotoUrl: '',
-          rustDeskId: '',
-          rustDeskSenha: '',
-          rustDeskServidor: RUSTDESK_SERVER,
-          rustDeskKey: RUSTDESK_KEY,
+          acessoRemotoSenha: '',
           equipamentoNome: this.getBrowserComputerName(),
           equipamentoIp: '',
           equipamentoSistemaOperacional: this.getOperatingSystem(),
@@ -456,6 +452,9 @@ export class TiPage implements OnInit, OnDestroy {
     this.detailTab.set('detalhes');
     this.clearAttachmentPreview();
     this.loadComunicacoes(item.id);
+    if (this.ticketModalRef) {
+      void this.connectChat(item.id);
+    }
     this.adminForm.patchValue({
       titulo: item.titulo,
       categoria: item.categoria,
@@ -467,10 +466,7 @@ export class TiPage implements OnInit, OnDestroy {
       status: item.status,
       responsavel: item.responsavel,
       acessoRemotoUrl: item.acessoRemotoUrl,
-      rustDeskId: item.rustDeskId,
-      rustDeskSenha: item.rustDeskSenha,
-      rustDeskServidor: item.rustDeskServidor || RUSTDESK_SERVER,
-      rustDeskKey: item.rustDeskKey || RUSTDESK_KEY,
+      acessoRemotoSenha: item.acessoRemotoSenha,
       equipamentoNome: item.equipamentoNome,
       equipamentoIp: item.equipamentoIp,
       equipamentoSistemaOperacional: item.equipamentoSistemaOperacional,
@@ -495,6 +491,7 @@ export class TiPage implements OnInit, OnDestroy {
       ignoreBackdropClick: this.updating() || this.sendingMessage() || this.closing() || this.reopening() || this.rating(),
       keyboard: !(this.updating() || this.sendingMessage() || this.closing() || this.reopening() || this.rating()),
     });
+    void this.connectChat(item.id);
   }
 
   closeTicketModal(): void {
@@ -504,6 +501,7 @@ export class TiPage implements OnInit, OnDestroy {
 
     this.clearAttachmentPreview();
     this.stopCommunicationRefresh();
+    void this.disconnectChat();
     this.ticketModalRef?.hide();
     this.ticketModalRef = undefined;
   }
@@ -575,6 +573,7 @@ export class TiPage implements OnInit, OnDestroy {
 
   sendMessage(): void {
     const selected = this.selected();
+    const mensagem = this.messageForm.controls.mensagem.value.trim();
     if (!selected || this.messageForm.invalid || this.sendingMessage()) {
       this.messageForm.markAllAsTouched();
       if (this.messageForm.invalid) {
@@ -583,10 +582,30 @@ export class TiPage implements OnInit, OnDestroy {
       return;
     }
 
+    if (!this.hasResponsible(selected)) {
+      this.toastr.info('Defina um responsavel pelo chamado antes de usar o chat.', 'Chat');
+      return;
+    }
+
     this.sendingMessage.set(true);
-    this.service.sendComunicacao(selected.id, this.messageForm.controls.mensagem.value).subscribe({
+    if (this.chatConnection?.state === 'Connected' && this.chatChamadoId === selected.id) {
+      this.chatConnection.invoke('EnviarMensagem', selected.id, mensagem).then(
+        () => {
+          this.messageForm.reset({ mensagem: '' });
+          this.sendingMessage.set(false);
+        },
+        () => this.sendMessageByHttp(selected, mensagem),
+      );
+      return;
+    }
+
+    this.sendMessageByHttp(selected, mensagem);
+  }
+
+  private sendMessageByHttp(selected: ChamadoTI, mensagem: string): void {
+    this.service.sendComunicacao(selected.id, mensagem).subscribe({
       next: (message) => {
-        this.comunicacoes.set([...this.comunicacoes(), message]);
+        this.addChatMessage(message);
         this.rememberTicketMovement({
           ...selected,
           ultimaMovimentacao: message.dataCriacao,
@@ -742,78 +761,102 @@ export class TiPage implements OnInit, OnDestroy {
     });
   }
 
-  openRemoteAccess(url = this.adminForm.controls.acessoRemotoUrl.value): void {
-    const target = url.trim();
+  downloadChatHistory(item = this.selected()): void {
+    if (!item || !this.canManage()) {
+      return;
+    }
+
+    this.service.downloadComunicacoes(item.id).subscribe({
+      next: (blob) => {
+        const url = URL.createObjectURL(blob);
+        const anchor = document.createElement('a');
+        anchor.href = url;
+        anchor.download = `chamado-${item.id}-historico-chat.txt`;
+        anchor.click();
+        URL.revokeObjectURL(url);
+      },
+      error: () => this.toastr.error('Nao foi possivel baixar o historico do chat.', 'Erro'),
+    });
+  }
+
+  openRemoteAccess(item = this.selected()): void {
+    if (!this.hasResponsible(item)) {
+      this.toastr.info('Defina um responsavel pelo chamado antes de iniciar o acesso remoto.', 'Acesso remoto');
+      return;
+    }
+
+    const target = this.buildRealVncLink(item);
     if (!target) {
-      this.toastr.info('Informe um link de acesso remoto no chamado.', 'Acesso remoto');
+      this.toastr.info('Este chamado ainda nao possui IP capturado para acesso remoto.', 'Acesso remoto');
       return;
     }
 
-    window.open(target, '_blank', 'noopener,noreferrer');
+    this.copyRemoteAccessPassword(item);
+
+    let launched = false;
+    const markLaunched = (): void => {
+      launched = true;
+      window.removeEventListener('blur', markLaunched);
+      document.removeEventListener('visibilitychange', markHidden);
+    };
+    const markHidden = (): void => {
+      if (document.hidden) {
+        markLaunched();
+      }
+    };
+
+    window.addEventListener('blur', markLaunched, { once: true });
+    document.addEventListener('visibilitychange', markHidden);
+    window.location.href = target;
+
+    window.setTimeout(() => {
+      window.removeEventListener('blur', markLaunched);
+      document.removeEventListener('visibilitychange', markHidden);
+      if (!launched) {
+        this.toastr.warning('RealVNC Viewer nao parece estar instalado ou o protocolo de abertura nao esta configurado neste computador.', 'Acesso remoto');
+      }
+    }, 1600);
   }
 
-  openRustDeskAccess(item = this.selected()): void {
-    const link = this.buildRustDeskLink(item);
-    if (!link) {
-      this.toastr.info('Este chamado ainda nao possui ID RustDesk do equipamento.', 'RustDesk');
-      return;
-    }
-
-    const password = item?.rustDeskSenha?.trim() || this.adminForm.controls.rustDeskSenha.value.trim();
-    if (password && navigator.clipboard) {
-      void navigator.clipboard.writeText(password).then(
-        () => this.toastr.success('Senha RustDesk copiada para a area de transferencia.', 'RustDesk'),
-        () => undefined,
-      );
-    }
-
-    window.location.href = link;
-  }
-
-  copyRustDeskPassword(): void {
-    const password = this.adminForm.controls.rustDeskSenha.value.trim();
-    if (!password) {
-      this.toastr.info('Nenhuma senha RustDesk informada.', 'RustDesk');
-      return;
-    }
-
-    if (!navigator.clipboard) {
-      this.toastr.info('Copie a senha diretamente do campo RustDesk.', 'RustDesk');
+  copyRemoteAccessPassword(item = this.selected()): void {
+    const password = item?.acessoRemotoSenha?.trim() || this.adminForm.controls.acessoRemotoSenha.value.trim();
+    if (!password || !navigator.clipboard) {
       return;
     }
 
     void navigator.clipboard.writeText(password).then(
-      () => this.toastr.success('Senha RustDesk copiada.', 'RustDesk'),
-      () => this.toastr.error('Nao foi possivel copiar a senha.', 'RustDesk'),
+      () => this.toastr.success('Senha de acesso remoto copiada para a area de transferencia.', 'Acesso remoto'),
+      () => undefined,
     );
   }
 
-  rustDeskLinkPreview(): string {
-    return this.buildRustDeskLink(this.selected()) || '';
+  openRemoteChat(): void {
+    const selected = this.selected();
+    if (!selected) {
+      return;
+    }
+
+    if (!this.hasResponsible(selected)) {
+      this.toastr.info('Defina um responsavel pelo chamado antes de usar o chat.', 'Chat');
+      return;
+    }
+
+    this.detailTab.set('comunicacao');
+    void this.connectChat(selected.id);
   }
 
-  private buildRustDeskLink(item: ChamadoTI | null = this.selected()): string {
-    const rustDeskId = item?.rustDeskId?.trim() || this.adminForm.controls.rustDeskId.value.trim();
-    if (!rustDeskId) {
+  private buildRealVncLink(item: ChamadoTI | null = this.selected()): string {
+    const ip = this.normalizeRemoteHost(item?.equipamentoIp || this.adminForm.controls.equipamentoIp.value);
+    return ip ? `com.realvnc.vncviewer.connect://${ip}` : '';
+  }
+
+  private normalizeRemoteHost(value: string | null | undefined): string {
+    const host = (value ?? '').trim().split(',')[0].trim();
+    if (!host || host === '::1' || host === '127.0.0.1') {
       return '';
     }
 
-    const params = new URLSearchParams();
-    const server = item?.rustDeskServidor?.trim() || this.adminForm.controls.rustDeskServidor.value.trim() || RUSTDESK_SERVER;
-    const key = item?.rustDeskKey?.trim() || this.adminForm.controls.rustDeskKey.value.trim() || RUSTDESK_KEY;
-    if (server) {
-      params.set('server', server);
-    }
-    if (key) {
-      params.set('key', key);
-    }
-
-    const query = params.toString();
-    return `rustdesk://${encodeURIComponent(rustDeskId)}${query ? `?${query}` : ''}`;
-  }
-
-  rustDeskServerLabel(): string {
-    return this.adminForm.controls.rustDeskServidor.value.trim() || RUSTDESK_SERVER;
+    return host.startsWith('::ffff:') ? host.slice('::ffff:'.length) : host;
   }
 
   equipmentSummary(item = this.selected()): string {
@@ -854,11 +897,16 @@ export class TiPage implements OnInit, OnDestroy {
     return !!item && !!current && !!item.dataEncerramento && (this.canManage() || item.userid === current.id);
   }
 
+  hasResponsible(item: ChamadoTI | null = this.selected()): boolean {
+    return !!item?.responsavel?.trim();
+  }
+
   private loadComunicacoes(id: number): void {
     this.loadingComunicacoes.set(true);
     this.service.listComunicacoes(id).subscribe({
       next: (items) => {
         this.comunicacoes.set(items);
+        this.markUnreadMessagesAsRead(items);
         this.loadingComunicacoes.set(false);
       },
       error: (error) => {
@@ -866,6 +914,126 @@ export class TiPage implements OnInit, OnDestroy {
         this.loadingComunicacoes.set(false);
         this.toastr.error(this.getErrorMessage('Nao foi possivel carregar a comunicacao.', error), 'Erro');
       },
+    });
+  }
+
+  private openRequestedChat(items: ChamadoTI[]): void {
+    const params = this.route.snapshot.queryParamMap;
+    if (params.get('chat') !== '1' || !this.ticketModalTemplate) {
+      return;
+    }
+
+    const chamadoId = Number(params.get('chamadoId'));
+    const item = items.find((chamado) => chamado.id === chamadoId);
+    if (!item) {
+      return;
+    }
+
+    this.openTicketModal(item, this.ticketModalTemplate);
+    this.detailTab.set('comunicacao');
+    void this.router.navigate([], { relativeTo: this.route, queryParams: {}, replaceUrl: true });
+  }
+
+  private async connectChat(chamadoId: number): Promise<void> {
+    if (!this.isBrowser) {
+      return;
+    }
+
+    if (this.chatConnection?.state === 'Connected' && this.chatChamadoId === chamadoId) {
+      return;
+    }
+
+    await this.disconnectChat();
+
+    const signalR = await import('@microsoft/signalr');
+    const connection = new signalR.HubConnectionBuilder()
+      .withUrl('/hubs/chamados-ti-chat', {
+        accessTokenFactory: () => this.auth.token() ?? '',
+      })
+      .withAutomaticReconnect()
+      .build();
+
+    connection.on('MensagemRecebida', (message: ChamadoTIComunicacao) => {
+      if (this.selected()?.id !== message.chamadoTIId) {
+        return;
+      }
+
+      this.addChatMessage(message);
+      this.markMessageAsRead(message);
+      const selected = this.selected();
+      if (selected) {
+        this.rememberTicketMovement({ ...selected, ultimaMovimentacao: message.dataCriacao });
+      }
+    });
+
+    connection.on('MensagemLida', (message: ChamadoTIComunicacao) => this.updateChatMessage(message));
+
+    connection.onreconnected(() => {
+      if (this.chatChamadoId) {
+        void connection.invoke('EntrarNoChamado', this.chatChamadoId);
+      }
+    });
+
+    try {
+      await connection.start();
+      await connection.invoke('EntrarNoChamado', chamadoId);
+      this.chatConnection = connection;
+      this.chatChamadoId = chamadoId;
+      this.stopCommunicationRefresh();
+    } catch {
+      this.chatConnection = null;
+      this.chatChamadoId = null;
+      this.startCommunicationRefresh();
+    }
+  }
+
+  private async disconnectChat(): Promise<void> {
+    const connection = this.chatConnection;
+    const chamadoId = this.chatChamadoId;
+    this.chatConnection = null;
+    this.chatChamadoId = null;
+
+    if (!connection) {
+      return;
+    }
+
+    try {
+      if (connection.state === 'Connected' && chamadoId) {
+        await connection.invoke('SairDoChamado', chamadoId);
+      }
+      await connection.stop();
+    } catch {
+      await connection.stop().catch(() => undefined);
+    }
+  }
+
+  private addChatMessage(message: ChamadoTIComunicacao): void {
+    if (this.comunicacoes().some((item) => item.id === message.id)) {
+      return;
+    }
+
+    this.comunicacoes.set([...this.comunicacoes(), message].sort((a, b) =>
+      new Date(a.dataCriacao).getTime() - new Date(b.dataCriacao).getTime(),
+    ));
+  }
+
+  private updateChatMessage(message: ChamadoTIComunicacao): void {
+    this.comunicacoes.set(this.comunicacoes().map((item) => item.id === message.id ? message : item));
+  }
+
+  private markUnreadMessagesAsRead(messages: ChamadoTIComunicacao[]): void {
+    messages.forEach((message) => this.markMessageAsRead(message));
+  }
+
+  private markMessageAsRead(message: ChamadoTIComunicacao): void {
+    const currentUserId = this.user()?.id;
+    if (!currentUserId || message.autorUserId === currentUserId || message.dataLeitura) {
+      return;
+    }
+
+    this.service.markComunicacaoRead(message.chamadoTIId, message.id).subscribe({
+      next: (updated) => this.updateChatMessage(updated),
+      error: () => undefined,
     });
   }
 
