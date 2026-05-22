@@ -40,6 +40,7 @@ const SPINNER_BACKDROP_BY_ROLE: Record<Role, string> = {
 };
 
 const PECAS_BI_ACCESSES = [
+  'pecas-admin',
   'vendas-pecas',
   'pecas-bi-renault',
   'pecas-bi-nissan',

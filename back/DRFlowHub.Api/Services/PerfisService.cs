@@ -24,6 +24,7 @@ namespace DRFlowHub.Api.Services
             new() { Chave = "compras", Nome = "Compras", Grupo = "Departamentos" },
             new() { Chave = "compras-admin", Nome = "Administrador do setor Compras", Grupo = "Administradores de setor" },
             new() { Chave = "controladoria", Nome = "Controladoria", Grupo = "Departamentos" },
+            new() { Chave = "pecas-admin", Nome = "Administrador do setor de pecas", Grupo = "Administradores de setor" },
             new() { Chave = "vendas-pecas", Nome = "BI de pecas Geral", Grupo = "BI" },
             new() { Chave = "pecas-bi-renault", Nome = "BI de pecas Renault", Grupo = "BI" },
             new() { Chave = "pecas-bi-nissan", Nome = "BI de pecas Nissan", Grupo = "BI" },

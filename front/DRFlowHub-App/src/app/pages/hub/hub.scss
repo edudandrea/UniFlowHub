@@ -21,14 +21,16 @@
 }
 
 .alert-row strong,
-.action-list strong {
+.action-list strong,
+.useful-link-card strong {
   font-weight: 850;
 }
 
 .metric-card p,
 .alert-row p,
 .empty-state p,
-.action-list span {
+.action-list span,
+.useful-link-card small {
   color: var(--color-muted);
 }
 
@@ -218,14 +220,13 @@ select {
 
 .metrics-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 14px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
 }
 
 .metric-card {
-  gap: 8px;
-  min-height: 138px;
-  padding: 18px;
+  min-height: 118px;
+  padding: 14px 16px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-surface);
@@ -238,7 +239,7 @@ select {
 }
 
 .metric-card strong {
-  font-size: 38px;
+  font-size: 34px;
   line-height: 1;
 }
 
@@ -443,6 +444,20 @@ select {
   gap: 10px;
 }
 
+.useful-link-card {
+  display: grid;
+  grid-template-columns: 46px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+  min-height: 78px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
 .birthday-list {
   display: grid;
   gap: 10px;
@@ -539,7 +554,8 @@ select {
     flex-direction: column;
   }
 
-  .actions-panel {
+  .actions-panel,
+  .useful-links-panel {
     width: 100%;
     flex-basis: auto;
   }
@@ -551,25 +567,6 @@ select {
 }
 
 @media (max-width: 860px) {
-  .sidebar {
-    position: sticky;
-    top: 0;
-    width: 100%;
-    max-height: none;
-    border-right: 0;
-    border-bottom: 1px solid var(--color-border);
-  }
-
-  .side-nav {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 4px;
-  }
-
-  .side-nav button {
-    min-width: 180px;
-  }
-
   .topbar,
   .dashboard-intro,
   .birthday-banner {

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Install-DRFlowHub-GUI")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Release")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+cfd0337fce697ad93735884da6403886a4d0f4ad")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+6c09a514bd7543384f2d72170fb37b192e7440d1")]
 [assembly: System.Reflection.AssemblyProductAttribute("Install-DRFlowHub-GUI")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Install-DRFlowHub-GUI")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

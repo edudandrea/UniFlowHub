@@ -39,8 +39,10 @@
     <div class="filters-table">
       <label>
         Empresa
-        <select [ngModel]="empresaNumero()" (ngModelChange)="setEmpresa($event)" [disabled]="isGerenteEmpresaPecas()">
-          <option [ngValue]="null">Todas</option>
+        <select [ngModel]="empresaNumero()" (ngModelChange)="setEmpresa($event)" [disabled]="isEmpresaFilterLocked()">
+          @if (!empresasPermitidasPorPerfil()) {
+            <option [ngValue]="null">Todas</option>
+          }
           @for (empresa of empresasDisponiveis(); track empresa.id) {
             <option [ngValue]="empresa.numero">{{ empresa.numero }} - {{ empresa.nome }}</option>
           }
@@ -128,7 +130,7 @@
     <article>
       <span>Rentabilidade</span>
       <strong>{{ formatPercent(rentabilidadePercentual()) }}</strong>
-      <p>Venda - custo medio e tributos</p>
+      <p>{{ formatMoney(rentabilidadeTotal()) }} no periodo</p>
     </article>
     <article>
       <span>Notas emitidas</span>
@@ -220,28 +222,47 @@
       <div class="donut-layout">
         <div class="donut-card" (mouseleave)="hoveredChannel.set(null)">
           <div class="donut">
-            <svg viewBox="0 0 120 120" role="img" aria-label="Origem das vendas por canal">
-              <circle class="donut-base" cx="60" cy="60" r="42" pathLength="100"></circle>
+            <svg class="pie-chart" viewBox="0 0 120 120" role="img" aria-label="Origem das vendas por canal">
+              <circle class="donut-base" cx="60" cy="60" r="47"></circle>
               @for (item of canaisData(); track item.nome; let index = $index) {
-                <circle
-                  class="donut-slice"
-                  cx="60"
-                  cy="60"
-                  r="42"
-                  pathLength="100"
-                  [attr.stroke]="channelColor(index)"
-                  [attr.stroke-dasharray]="percentOfTotal(item.faturamento, canaisTotal()) + ' ' + (100 - percentOfTotal(item.faturamento, canaisTotal()))"
-                  [attr.stroke-dashoffset]="-channelOffsetPercent(index)"
+                <g
+                  class="donut-segment"
+                  [class.is-hovered]="hoveredChannel() === item.nome"
+                  [class.is-muted]="!!hoveredChannel() && hoveredChannel() !== item.nome"
+                  [attr.transform]="channelTransform(index)"
                   (mouseenter)="hoveredChannel.set(item.nome)"
                   (focus)="hoveredChannel.set(item.nome)"
+                  (click)="openChannelReport(item.nome)"
+                  (keydown.enter)="openChannelReport(item.nome)"
                   tabindex="0"
-                ></circle>
+                  role="button"
+                  [attr.aria-label]="'Gerar relatorio de ' + channelLabel(item.nome)"
+                >
+                  <path
+                    class="donut-slice"
+                    [attr.d]="channelSlicePath(index)"
+                    [style.fill]="channelColor(index)"
+                  ></path>
+                  @if (shouldShowChannelPercent(item)) {
+                    <text class="donut-percent" [attr.x]="channelLabelX(index)" [attr.y]="channelLabelY(index)">
+                      {{ formatPercent(percentOfTotal(item.faturamento, canaisTotal())) }}
+                    </text>
+                  }
+                  @if (shouldShowChannelClients(item)) {
+                    <text class="donut-client-count" [attr.x]="channelLabelX(index)" [attr.y]="channelLabelY(index)">
+                      {{ item.clientesAtendidos }} clientes
+                    </text>
+                  }
+                </g>
               }
             </svg>
           </div>
           <div class="donut-value">
             <strong>{{ formatMoney(hoveredChannelValue()) }}</strong>
             <span>{{ hoveredChannelLabel() }}</span>
+            @if (hoveredChannel()) {
+              <small>{{ hoveredChannelClients() }} clientes atendidos</small>
+            }
           </div>
         </div>
         <div class="bar-list compact">
@@ -388,7 +409,10 @@
                 <td><strong>{{ item.quantidade }}</strong></td>
                 <td><strong class="money-cell">{{ formatMoney(item.faturamento) }}</strong></td>
                 <td>{{ formatPercent(item.margemPercentual) }}</td>
-                <td>{{ formatPercent(item.rentabilidadePercentual) }}</td>
+                <td>
+                  <strong class="money-cell">{{ formatMoney(item.rentabilidade) }}</strong>
+                  <small>{{ formatPercent(item.rentabilidadePercentual) }}</small>
+                </td>
               </tr>
             }
           </tbody>
@@ -429,6 +453,55 @@
           </button>
         </div>
       </form>
+    </section>
+  }
+
+  @if (channelReportOpen()) {
+    <section class="modal-backdrop" (click)="$event.target === $event.currentTarget && closeChannelReport()">
+      <article class="report-modal" (click)="$event.stopPropagation()">
+        <header>
+          <div>
+            <p class="system-name">Relatorio do canal</p>
+            <h2>{{ channelLabel(channelReportName()) }}</h2>
+          </div>
+          <div class="report-actions">
+            <button class="secondary" type="button" (click)="downloadChannelReportPdf()" [disabled]="channelReportLoading() || !channelReportItems().length">
+              Baixar PDF
+            </button>
+            <button type="button" (click)="closeChannelReport()" aria-label="Fechar">x</button>
+          </div>
+        </header>
+        @if (channelReportLoading()) {
+          <p class="empty-ranking">Gerando relatorio...</p>
+        } @else {
+          <div class="table-scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>Cliente</th>
+                  <th>Nota fiscal</th>
+                  <th>Data</th>
+                  <th>Faturamento</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of channelReportItems(); track item.numeroNotaFiscal + item.cliente) {
+                  <tr>
+                    <td>{{ item.cliente }}</td>
+                    <td>{{ item.numeroNotaFiscal }}</td>
+                    <td>{{ item.data | date: 'dd/MM/yyyy' }}</td>
+                    <td><strong class="money-cell">{{ formatMoney(item.faturamento) }}</strong></td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="4">Nenhuma nota encontrada para este canal.</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </article>
     </section>
   }
 </main>

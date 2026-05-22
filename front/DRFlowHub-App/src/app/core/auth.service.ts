@@ -84,11 +84,22 @@ export class AuthService {
   }
 
   landingRoute(): string {
+    if (this.isTiUser()) {
+      return '/hub';
+    }
+
     if (this.hasAccess('dashboard-admin')) {
       return '/admin';
     }
 
     return '/hub';
+  }
+
+  private isTiUser(): boolean {
+    const user = this.user();
+    const role = this.normalize(user?.role);
+    const department = this.normalize(user?.departamento);
+    return role === 'ti' || department.includes('ti') || department.includes('tecnologia');
   }
 
   private setSession(response: LoginResponse): void {
@@ -139,5 +150,13 @@ export class AuthService {
 
   private hasStorage(): boolean {
     return typeof localStorage !== 'undefined';
+  }
+
+  private normalize(value: string | null | undefined): string {
+    return String(value ?? '')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .toLowerCase()
+      .trim();
   }
 }

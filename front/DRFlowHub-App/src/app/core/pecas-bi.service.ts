@@ -8,6 +8,7 @@ export interface PecaVendaMensal {
   mes: string;
   faturamento: number;
   margem: number;
+  rentabilidade: number;
   rentabilidadePercentual: number;
   quantidade: number;
 }
@@ -25,6 +26,7 @@ export interface PecaRanking {
   quantidade: number;
   faturamento: number;
   margemPercentual: number;
+  rentabilidade: number;
   rentabilidadePercentual: number;
   giroDias: number;
 }
@@ -43,6 +45,15 @@ export interface PecaVendedor {
 export interface PecaCanal {
   nome: string;
   faturamento: number;
+  clientesAtendidos: number;
+}
+
+export interface PecaCanalDetalhe {
+  canal: string;
+  cliente: string;
+  numeroNotaFiscal: string;
+  data: string;
+  faturamento: number;
 }
 
 export interface PecaCliente {
@@ -55,6 +66,8 @@ export interface PecaCliente {
 export interface PecasBiData {
   atualizadoEm: string;
   podeVerRankingVendedores: boolean;
+  empresasPermitidas?: number[] | null;
+  revendasPermitidas?: number[] | null;
   vendasMensais: PecaVendaMensal[];
   categorias: PecaCategoria[];
   pecas: PecaRanking[];
@@ -85,6 +98,20 @@ export class PecasBiService {
   constructor(private readonly http: HttpClient) {}
 
   load(filter: { dataInicio?: string; dataFim?: string; empresa?: number | null; revenda?: number | number[] | null; canal?: string | string[] } = {}): Observable<PecasBiData> {
+    const params = this.buildParams(filter);
+    return this.http.get<PecasBiData>(`${API_URL}/pecas-bi`, { params });
+  }
+
+  loadCanalDetalhes(canal: string, filter: { dataInicio?: string; dataFim?: string; empresa?: number | null; revenda?: number | number[] | null; canal?: string | string[] } = {}): Observable<PecaCanalDetalhe[]> {
+    const params = this.buildParams(filter);
+    return this.http.get<PecaCanalDetalhe[]>(`${API_URL}/pecas-bi/canais/${encodeURIComponent(canal)}/detalhes`, { params });
+  }
+
+  saveMeta(payload: PecaVendedorMetaPayload): Observable<PecaVendedorMetaPayload> {
+    return this.http.put<PecaVendedorMetaPayload>(`${API_URL}/pecas-bi/vendedores/meta`, payload);
+  }
+
+  private buildParams(filter: { dataInicio?: string; dataFim?: string; empresa?: number | null; revenda?: number | number[] | null; canal?: string | string[] } = {}): Record<string, string> {
     const params: Record<string, string> = {};
     if (filter.dataInicio) {
       params['dataInicio'] = filter.dataInicio;
@@ -106,10 +133,6 @@ export class PecasBiService {
       params['canal'] = filter.canal;
     }
 
-    return this.http.get<PecasBiData>(`${API_URL}/pecas-bi`, { params });
-  }
-
-  saveMeta(payload: PecaVendedorMetaPayload): Observable<PecaVendedorMetaPayload> {
-    return this.http.put<PecaVendedorMetaPayload>(`${API_URL}/pecas-bi/vendedores/meta`, payload);
+    return params;
   }
 }

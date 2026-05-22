@@ -52,6 +52,23 @@ namespace DRFlowHub.Api.Controllers
             }
         }
 
+        [HttpGet("canais/{canal}/detalhes")]
+        public async Task<IActionResult> LoadCanalDetalhes(string canal, [FromQuery] PecasBiFilterDto filter)
+        {
+            try
+            {
+                return Ok(await _service.LoadCanalDetalhesAsync(GetRole(), GetCurrentUserId(), canal, filter));
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(ex.Message);
+            }
+        }
+
         private string GetRole()
         {
             return User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;

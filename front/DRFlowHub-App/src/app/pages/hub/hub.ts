@@ -13,6 +13,7 @@ import { SolicitacoesService } from '../../core/solicitacoes.service';
 import { ThemeService } from '../../core/theme.service';
 
 type DashboardArea = 'admin' | 'rh' | 'ti' | 'compras' | 'controladoria' | 'financeiro' | 'departamento';
+const USEFUL_LINKS_KEY = 'drflowhub.usefulLinks';
 
 interface MetricCard {
   label: string;
@@ -37,6 +38,14 @@ interface DashboardAction {
   route: string;
   description: string;
   enabled: boolean;
+}
+
+interface UsefulLink {
+  label: string;
+  url: string;
+  description: string;
+  icon: 'outlook' | 'whatsapp' | 'custom';
+  locked: boolean;
 }
 
 interface BirthdayItem {
@@ -88,6 +97,25 @@ export class HubPage implements OnInit {
   readonly forecastLocation = signal('Porto Alegre');
   readonly forecastLoading = signal(false);
   readonly forecastError = signal('');
+  readonly usefulLinks = signal<UsefulLink[]>([
+    {
+      label: 'Outlook',
+      url: 'https://outlook.com',
+      description: 'Email, agenda e contatos Microsoft.',
+      icon: 'outlook',
+      locked: true,
+    },
+    {
+      label: 'WhatsApp Web',
+      url: 'https://web.whatsapp.com',
+      description: 'Mensagens e atendimento pelo navegador.',
+      icon: 'whatsapp',
+      locked: true,
+    },
+  ]);
+  readonly newLinkName = signal('');
+  readonly newLinkUrl = signal('');
+  readonly newLinkDescription = signal('');
 
   readonly greeting = computed(() => {
     const firstName = (this.user()?.nome || 'Usuario').trim().split(/\s+/)[0];
@@ -226,8 +254,9 @@ export class HubPage implements OnInit {
       return [
         this.metric('Abertos', items.filter((item) => this.isOpenStatus(item.status)).length, 'Chamados ativos', 'attention'),
         this.metric('Reabertos', items.filter((item) => item.reaberto || this.isReopened(item.status)).length, 'Voltaram para suporte', 'danger'),
-        this.metric('Alta prioridade', items.filter((item) => this.isHighPriority(item.prioridade)).length, 'Incidentes relevantes', 'danger'),
+        this.metric('Alta prioridade', items.filter((item) => this.isOpenStatus(item.status) && this.isHighPriority(item.prioridade)).length, 'Incidentes relevantes abertos', 'danger'),
         this.metric('Sem responsavel', items.filter((item) => !item.responsavel?.trim()).length, 'Aguardando atribuição', 'neutral'),
+        this.metric('Concluídos atendente', items.filter((item) => this.isCompletedTi(item) && this.isAssignedToCurrentUser(item)).length, 'Finalizados por você', 'success'),
       ];
     }
 
@@ -342,6 +371,7 @@ export class HubPage implements OnInit {
 
     this.loadDashboard();
     this.loadForecast();
+    this.loadUsefulLinks();
   }
 
   loadDashboard(): void {
@@ -380,6 +410,49 @@ export class HubPage implements OnInit {
 
   openAlert(alert: AlertItem): void {
     void this.router.navigateByUrl(alert.route);
+  }
+
+  faviconUrl(link: UsefulLink): string {
+    try {
+      const domain = new URL(link.url).hostname;
+      return `https://www.google.com/s2/favicons?domain=${encodeURIComponent(domain)}&sz=64`;
+    } catch {
+      return '';
+    }
+  }
+
+  hideBrokenFavicon(event: Event): void {
+    const image = event.target as HTMLImageElement | null;
+    image?.setAttribute('hidden', 'true');
+  }
+
+  addUsefulLink(): void {
+    const label = this.newLinkName().trim();
+    const url = this.normalizeUrl(this.newLinkUrl());
+    const description = this.newLinkDescription().trim() || 'Link personalizado';
+    if (!label || !url) {
+      this.toastr.warning('Informe nome e link para adicionar o card.', 'Links úteis');
+      return;
+    }
+
+    this.usefulLinks.set([...this.usefulLinks(), { label, url, description, icon: 'custom', locked: false }]);
+    this.saveUsefulLinks();
+    this.newLinkName.set('');
+    this.newLinkUrl.set('');
+    this.newLinkDescription.set('');
+    this.toastr.success('Link adicionado ao dashboard.', 'Links úteis');
+  }
+
+  removeUsefulLink(link: UsefulLink, event: Event): void {
+    event.preventDefault();
+    event.stopPropagation();
+    if (link.locked) {
+      return;
+    }
+
+    this.usefulLinks.set(this.usefulLinks().filter((item) => item !== link));
+    this.saveUsefulLinks();
+    this.toastr.info('Link removido do dashboard.', 'Links úteis');
   }
 
   loadForecast(): void {
@@ -426,6 +499,33 @@ export class HubPage implements OnInit {
 
   private metric(label: string, value: number, detail: string, tone: MetricCard['tone']): MetricCard {
     return { label, value, detail, tone };
+  }
+
+  private loadUsefulLinks(): void {
+    const raw = localStorage.getItem(USEFUL_LINKS_KEY);
+    if (!raw) {
+      return;
+    }
+
+    try {
+      const customLinks = JSON.parse(raw) as UsefulLink[];
+      this.usefulLinks.set([...this.usefulLinks(), ...customLinks.filter((link) => link.label && link.url)]);
+    } catch {
+      localStorage.removeItem(USEFUL_LINKS_KEY);
+    }
+  }
+
+  private saveUsefulLinks(): void {
+    localStorage.setItem(USEFUL_LINKS_KEY, JSON.stringify(this.usefulLinks().filter((link) => !link.locked)));
+  }
+
+  private normalizeUrl(value: string): string {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return '';
+    }
+
+    return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
   }
 
   private async loadCurrentLocationForecast(latitude: number, longitude: number): Promise<void> {
@@ -660,6 +760,20 @@ export class HubPage implements OnInit {
   private isOpenStatus(status: string): boolean {
     const normalized = this.normalize(status);
     return !['concluida', 'concluido', 'encerrada', 'encerrado', 'cancelada', 'cancelado', 'reprovada', 'reprovado'].includes(normalized);
+  }
+
+  private isCompletedTi(item: ChamadoTI): boolean {
+    return !!item.dataEncerramento || this.normalize(item.status) === 'concluido';
+  }
+
+  private isAssignedToCurrentUser(item: ChamadoTI): boolean {
+    const user = this.user();
+    if (!user) {
+      return false;
+    }
+
+    const responsible = this.normalize(item.responsavel);
+    return !!responsible && [user.nome, user.email].some((value) => this.normalize(value) === responsible);
   }
 
   private isFinalCompra(item: SolicitacaoCompra): boolean {

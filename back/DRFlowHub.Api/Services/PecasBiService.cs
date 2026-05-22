@@ -15,7 +15,7 @@ namespace DRFlowHub.Api.Services
     {
         private readonly AppDbContext _context;
         private readonly string _connectionString;
-        private sealed record PecaBiAccessScope(string? CpfVendedor, int? EmpresaNumero, IReadOnlyCollection<int>? EmpresasPermitidas, bool AcessoGeral);
+        private sealed record PecaBiAccessScope(string? CpfVendedor, int? EmpresaNumero, IReadOnlyCollection<int>? EmpresasPermitidas, IReadOnlyCollection<int>? RevendasPermitidas, bool AcessoGeral, bool AdminPecas);
 
         private static readonly Dictionary<string, int> PecasBiEmpresaPorAcesso = new(StringComparer.OrdinalIgnoreCase)
         {
@@ -46,12 +46,14 @@ namespace DRFlowHub.Api.Services
                     ) AS FATURAMENTO,
                     SUM(
                         ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
+                        + COALESCE(FMI.VAL_ICMS_PARTIL_UF_DEST, 0)
+                        + COALESCE(FMI.DIFERENCA_ICMS_REDUZIDO, 0)
                         + COALESCE(FMI.VAL_PIS, 0)
                         + COALESCE(FMI.VAL_COFINS, 0)
                         + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
                     ) AS DESPESAS_RENTABILIDADE,
                     SUM(
-                        COALESCE(FMI.VAL_ICMS, 0)
+                        ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
                         + COALESCE(FMI.VAL_ICMS_RETIDO, 0)
                         + COALESCE(FMI.VAL_IPI, 0)
                         + COALESCE(FMI.VAL_PIS, 0)
@@ -90,6 +92,7 @@ namespace DRFlowHub.Api.Services
                     FMC.SERIE_NOTA_FISCAL,
                     FMC.TIPO_TRANSACAO,
                     FMC.CONTADOR,
+                    FMC.CLIENTE,
                     FMC.DTA_ENTRADA_SAIDA,
                     FNV.VENDEDOR,
                     COALESCE(FV.NOME, 'Vendedor ' || TO_CHAR(FNV.VENDEDOR)) AS NOME_VENDEDOR,
@@ -214,6 +217,7 @@ namespace DRFlowHub.Api.Services
                 TO_CHAR(TRUNC(DTA_ENTRADA_SAIDA, 'MM'), 'MM/YYYY') AS MES,
                 SUM(FATURAMENTO) AS FATURAMENTO,
                 SUM(MARGEM) AS MARGEM,
+                SUM(FATURAMENTO) - (SUM(CUSTO_RENTABILIDADE) + SUM(DESPESAS_RENTABILIDADE)) AS RENTABILIDADE,
                 CASE
                     WHEN SUM(FATURAMENTO) = 0 THEN 0
                     ELSE ((SUM(FATURAMENTO) - (SUM(CUSTO_RENTABILIDADE) + SUM(DESPESAS_RENTABILIDADE))) / SUM(FATURAMENTO)) * 100
@@ -224,10 +228,31 @@ namespace DRFlowHub.Api.Services
             ORDER BY TRUNC(DTA_ENTRADA_SAIDA, 'MM')";
 
         private const string CanaisSql = BaseCapaSql + @"
-            SELECT CANAL, SUM(FATURAMENTO) AS FATURAMENTO
+            SELECT CANAL, SUM(FATURAMENTO) AS FATURAMENTO, COUNT(DISTINCT CLIENTE) AS CLIENTES_ATENDIDOS
             FROM BASE
             GROUP BY CANAL
             ORDER BY FATURAMENTO DESC";
+
+        private const string CanaisDetalhesSql = BaseCapaSql + @"
+            SELECT
+                B.CANAL,
+                COALESCE(FCL.NOME, 'Cliente ' || TO_CHAR(FMC.CLIENTE)) AS CLIENTE,
+                TO_CHAR(FMC.NUMERO_NOTA_FISCAL) AS NUMERO_NOTA_FISCAL,
+                B.DTA_ENTRADA_SAIDA AS DATA,
+                SUM(B.FATURAMENTO) AS FATURAMENTO
+            FROM BASE B
+            INNER JOIN FAT_MOVIMENTO_CAPA FMC
+              ON FMC.EMPRESA = B.EMPRESA
+             AND FMC.REVENDA = B.REVENDA
+             AND FMC.NUMERO_NOTA_FISCAL = B.NUMERO_NOTA_FISCAL
+             AND FMC.SERIE_NOTA_FISCAL = B.SERIE_NOTA_FISCAL
+             AND FMC.TIPO_TRANSACAO = B.TIPO_TRANSACAO
+             AND FMC.CONTADOR = B.CONTADOR
+            LEFT JOIN FAT_CLIENTE FCL
+              ON FCL.CLIENTE = FMC.CLIENTE
+            WHERE B.CANAL = :CANAL_DETALHE
+            GROUP BY B.CANAL, FCL.NOME, FMC.CLIENTE, FMC.NUMERO_NOTA_FISCAL, B.DTA_ENTRADA_SAIDA
+            ORDER BY B.DTA_ENTRADA_SAIDA DESC, FMC.NUMERO_NOTA_FISCAL DESC";
 
         private const string MetaVendedorSql = BaseCapaSql + @"
             SELECT COALESCE(SUM(FATURAMENTO), 0) AS FATURAMENTO
@@ -291,7 +316,7 @@ namespace DRFlowHub.Api.Services
             SELECT *
             FROM (
                 SELECT
-                    TO_CHAR(FMI.ITEM_ESTOQUE) AS CODIGO,
+                    COALESCE(TO_CHAR(PIE.ITEM_ESTOQUE_PUB), TO_CHAR(FMI.ITEM_ESTOQUE)) AS CODIGO,
                     COALESCE(PIE.DES_ITEM_ESTOQUE, 'Peca ' || TO_CHAR(FMI.ITEM_ESTOQUE)) AS NOME,
                     COALESCE(TO_CHAR(PIE.GRUPO), 'Pecas') AS CATEGORIA,
                     SUM(
@@ -382,6 +407,8 @@ namespace DRFlowHub.Api.Services
                                     END * (
                                         COALESCE(FMI.VAL_CUSTO_MEDIO, 0)
                                         + ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
+                                        + COALESCE(FMI.VAL_ICMS_PARTIL_UF_DEST, 0)
+                                        + COALESCE(FMI.DIFERENCA_ICMS_REDUZIDO, 0)
                                         + COALESCE(FMI.VAL_PIS, 0)
                                         + COALESCE(FMI.VAL_COFINS, 0)
                                         + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
@@ -482,7 +509,7 @@ namespace DRFlowHub.Api.Services
                             ELSE FMC.TIPO_TRANSACAO
                          END || ',') > 0
                   )
-                GROUP BY FMI.ITEM_ESTOQUE, PIE.DES_ITEM_ESTOQUE, PIE.GRUPO
+                GROUP BY FMI.ITEM_ESTOQUE, PIE.ITEM_ESTOQUE_PUB, PIE.DES_ITEM_ESTOQUE, PIE.GRUPO
                 ORDER BY FATURAMENTO DESC
             )
             WHERE ROWNUM <= 10";
@@ -519,6 +546,7 @@ namespace DRFlowHub.Api.Services
             else if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
             {
                 empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
+                revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
             }
 
             await using var connection = new OracleConnection(_connectionString);
@@ -526,7 +554,8 @@ namespace DRFlowHub.Api.Services
 
             var vendas = await LoadVendasMensaisAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
             var canais = await LoadCanaisAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
-            var podeVerRankingVendedores = RoleScope.IsGerenteGeralPecas(role) || RoleScope.IsGerentePecas(role) || RoleScope.IsAdmin(role) || RoleScope.IsTI(role);
+            var podeAdministrarPecas = CanManagePecas(role, accessScope);
+            var podeVerRankingVendedores = podeAdministrarPecas || RoleScope.IsGerenteGeralPecas(role) || RoleScope.IsGerentePecas(role);
             var podeVerClientes = podeVerRankingVendedores || RoleScope.IsVendedorPecas(role);
             var vendedores = podeVerRankingVendedores
                 ? await LoadVendedoresAsync(connection, dataInicio, dataFim, empresa, revenda, canal)
@@ -545,6 +574,8 @@ namespace DRFlowHub.Api.Services
             {
                 AtualizadoEm = DateTime.UtcNow,
                 PodeVerRankingVendedores = podeVerRankingVendedores,
+                EmpresasPermitidas = accessScope.AcessoGeral ? null : accessScope.EmpresasPermitidas?.ToList(),
+                RevendasPermitidas = accessScope.AcessoGeral ? null : accessScope.RevendasPermitidas?.ToList(),
                 VendasMensais = vendas,
                 Canais = canais,
                 Vendedores = vendedores,
@@ -556,10 +587,48 @@ namespace DRFlowHub.Api.Services
             };
         }
 
+        public async Task<List<PecaCanalDetalheDto>> LoadCanalDetalhesAsync(string role, int userId, string canalDetalhe, PecasBiFilterDto filter)
+        {
+            await EnsureCanAccessAsync(role);
+            EnsureConnectionString();
+
+            if (string.IsNullOrWhiteSpace(canalDetalhe))
+                throw new InvalidOperationException("Canal nao informado.");
+
+            var dataInicio = (filter.DataInicio ?? DateTime.Today.AddMonths(-5)).Date;
+            var dataFim = (filter.DataFim ?? DateTime.Today).Date.AddDays(1).AddTicks(-1);
+            if (dataInicio > dataFim)
+                throw new InvalidOperationException("Data inicial nao pode ser maior que a data final.");
+
+            var accessScope = await GetAccessScopeAsync(role, userId);
+            var cpfVendedor = accessScope.CpfVendedor;
+            var empresa = NormalizeFilter(filter.Empresa);
+            var revenda = NormalizeFilter(filter.Revenda);
+            var canal = canalDetalhe.Trim().ToUpperInvariant();
+
+            if (RoleScope.IsGerentePecas(role))
+            {
+                if (!accessScope.EmpresaNumero.HasValue || accessScope.EmpresaNumero.Value <= 0)
+                    throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
+
+                empresa = accessScope.EmpresaNumero.Value.ToString();
+            }
+            else if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
+            {
+                empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
+                revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
+            }
+
+            await using var connection = new OracleConnection(_connectionString);
+            await connection.OpenAsync();
+            return await LoadCanalDetalhesAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
+        }
+
         public async Task<PecaVendedorMetaDto> SaveMetaAsync(string role, int userId, PecaVendedorMetaDto dto)
         {
-            if (!RoleScope.IsGerenteGeralPecas(role) && !RoleScope.IsGerentePecas(role) && !RoleScope.IsAdmin(role) && !RoleScope.IsTI(role))
-                throw new UnauthorizedAccessException("Somente Gerente Geral de Pecas, Gerente de Pecas, Admin ou TI podem configurar metas de vendedores.");
+            var accessScope = await GetAccessScopeAsync(role, userId);
+            if (!CanManagePecas(role, accessScope) && !RoleScope.IsGerenteGeralPecas(role) && !RoleScope.IsGerentePecas(role))
+                throw new UnauthorizedAccessException("Somente administradores do setor de pecas, Gerente Geral de Pecas, Gerente de Pecas, Admin ou TI podem configurar metas de vendedores.");
 
             var cpf = OnlyDigits(dto.CpfVendedor);
             if (string.IsNullOrWhiteSpace(cpf))
@@ -605,19 +674,25 @@ namespace DRFlowHub.Api.Services
         private async Task<PecaBiAccessScope> GetAccessScopeAsync(string role, int userId)
         {
             var perfilAcessos = await GetPerfilAcessosAsync(role);
-            var acessoGeral = RoleScope.IsAdmin(role)
-                || RoleScope.IsTI(role)
-                || RoleScope.IsGerenteGeralPecas(role)
-                || perfilAcessos.Contains("vendas-pecas");
+            var adminPecas = perfilAcessos.Contains("pecas-admin");
             var empresasPermitidas = perfilAcessos
                 .Where(PecasBiEmpresaPorAcesso.ContainsKey)
                 .Select(acesso => PecasBiEmpresaPorAcesso[acesso])
                 .Distinct()
                 .OrderBy(empresa => empresa)
                 .ToList();
+            var possuiEscopoPorEmpresa = empresasPermitidas.Count > 0;
+            var acessoGeral = RoleScope.IsAdmin(role)
+                || RoleScope.IsTI(role)
+                || RoleScope.IsGerenteGeralPecas(role)
+                || adminPecas
+                || (perfilAcessos.Contains("vendas-pecas") && !possuiEscopoPorEmpresa);
+            var revendasPermitidas = !acessoGeral && possuiEscopoPorEmpresa
+                ? await GetRevendasPermitidasAsync(empresasPermitidas)
+                : null;
 
             if (!RoleScope.IsVendedorPecas(role) && !RoleScope.IsGerentePecas(role))
-                return new PecaBiAccessScope(null, null, empresasPermitidas, acessoGeral);
+                return new PecaBiAccessScope(null, null, empresasPermitidas, revendasPermitidas, acessoGeral, adminPecas);
 
             var user = await _context.User
                 .Include(user => user.Unidade)
@@ -634,14 +709,14 @@ namespace DRFlowHub.Api.Services
                 if (string.IsNullOrWhiteSpace(cpf))
                     throw new UnauthorizedAccessException("CPF do vendedor nao encontrado no cadastro do usuario.");
 
-                return new PecaBiAccessScope(cpf, null, empresasPermitidas, acessoGeral);
+                return new PecaBiAccessScope(cpf, null, empresasPermitidas, revendasPermitidas, acessoGeral, adminPecas);
             }
 
             var empresaNumero = user.Unidade?.EmpresaCadastro?.Numero;
             if (!empresaNumero.HasValue || empresaNumero.Value <= 0)
                 throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
 
-            return new PecaBiAccessScope(null, empresaNumero, empresasPermitidas, acessoGeral);
+            return new PecaBiAccessScope(null, empresaNumero, empresasPermitidas, revendasPermitidas, acessoGeral, adminPecas);
         }
 
         private static async Task<List<PecaVendaMensalDto>> LoadVendasMensaisAsync(OracleConnection connection, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, object canal)
@@ -656,6 +731,7 @@ namespace DRFlowHub.Api.Services
                     Mes = GetString(reader, "MES"),
                     Faturamento = GetDecimal(reader, "FATURAMENTO"),
                     Margem = GetDecimal(reader, "MARGEM"),
+                    Rentabilidade = GetDecimal(reader, "RENTABILIDADE"),
                     RentabilidadePercentual = GetDecimal(reader, "RENTABILIDADE_PERCENTUAL"),
                     Quantidade = GetInt(reader, "QUANTIDADE")
                 });
@@ -674,6 +750,27 @@ namespace DRFlowHub.Api.Services
                 items.Add(new PecaCanalDto
                 {
                     Nome = GetString(reader, "CANAL"),
+                    Faturamento = GetDecimal(reader, "FATURAMENTO"),
+                    ClientesAtendidos = GetInt(reader, "CLIENTES_ATENDIDOS")
+                });
+            }
+
+            return items;
+        }
+
+        private static async Task<List<PecaCanalDetalheDto>> LoadCanalDetalhesAsync(OracleConnection connection, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, string canalDetalhe)
+        {
+            var items = new List<PecaCanalDetalheDto>();
+            await using var command = CreateCommand(connection, CanaisDetalhesSql, dataInicio, dataFim, empresa, revenda, cpfVendedor, canalDetalhe, canalDetalhe);
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                items.Add(new PecaCanalDetalheDto
+                {
+                    Canal = GetString(reader, "CANAL"),
+                    Cliente = GetString(reader, "CLIENTE"),
+                    NumeroNotaFiscal = GetString(reader, "NUMERO_NOTA_FISCAL"),
+                    Data = GetDateTime(reader, "DATA"),
                     Faturamento = GetDecimal(reader, "FATURAMENTO")
                 });
             }
@@ -792,15 +889,18 @@ namespace DRFlowHub.Api.Services
             await using var reader = await command.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
+                var faturamento = GetDecimal(reader, "FATURAMENTO");
+                var rentabilidadePercentual = GetDecimal(reader, "RENTABILIDADE_PERCENTUAL");
                 items.Add(new PecaRankingDto
                 {
                     Codigo = GetString(reader, "CODIGO"),
                     Nome = GetString(reader, "NOME"),
                     Categoria = GetString(reader, "CATEGORIA"),
                     Quantidade = GetInt(reader, "QUANTIDADE"),
-                    Faturamento = GetDecimal(reader, "FATURAMENTO"),
+                    Faturamento = faturamento,
                     MargemPercentual = GetDecimal(reader, "MARGEM_PERCENTUAL"),
-                    RentabilidadePercentual = GetDecimal(reader, "RENTABILIDADE_PERCENTUAL"),
+                    Rentabilidade = faturamento * rentabilidadePercentual / 100,
+                    RentabilidadePercentual = rentabilidadePercentual,
                     GiroDias = 0
                 });
             }
@@ -808,7 +908,7 @@ namespace DRFlowHub.Api.Services
             return items;
         }
 
-        private static OracleCommand CreateCommand(OracleConnection connection, string sql, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, object canal)
+        private static OracleCommand CreateCommand(OracleConnection connection, string sql, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, object canal, string? canalDetalhe = null)
         {
             var command = connection.CreateCommand();
             command.BindByName = true;
@@ -820,6 +920,8 @@ namespace DRFlowHub.Api.Services
             command.Parameters.Add("REVENDA", OracleDbType.Varchar2, revenda, ParameterDirection.Input);
             command.Parameters.Add("CPF_VENDEDOR", OracleDbType.Varchar2, string.IsNullOrWhiteSpace(cpfVendedor) ? DBNull.Value : cpfVendedor, ParameterDirection.Input);
             command.Parameters.Add("CANAL", OracleDbType.Varchar2, canal, ParameterDirection.Input);
+            if (canalDetalhe is not null)
+                command.Parameters.Add("CANAL_DETALHE", OracleDbType.Varchar2, canalDetalhe, ParameterDirection.Input);
             return command;
         }
 
@@ -845,7 +947,12 @@ namespace DRFlowHub.Api.Services
         private async Task<bool> HasAnyPecasBiPerfilAccessAsync(string role)
         {
             var acessos = await GetPerfilAcessosAsync(role);
-            return acessos.Contains("vendas-pecas") || acessos.Any(PecasBiEmpresaPorAcesso.ContainsKey);
+            return acessos.Contains("pecas-admin") || acessos.Contains("vendas-pecas") || acessos.Any(PecasBiEmpresaPorAcesso.ContainsKey);
+        }
+
+        private static bool CanManagePecas(string role, PecaBiAccessScope accessScope)
+        {
+            return RoleScope.IsAdmin(role) || RoleScope.IsTI(role) || accessScope.AdminPecas;
         }
 
         private async Task<HashSet<string>> GetPerfilAcessosAsync(string role)
@@ -857,6 +964,22 @@ namespace DRFlowHub.Api.Services
                 .ToListAsync();
 
             return acessos.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private async Task<List<int>> GetRevendasPermitidasAsync(IReadOnlyCollection<int> empresasPermitidas)
+        {
+            if (empresasPermitidas.Count == 0)
+                return new List<int>();
+
+            return await _context.Unidade
+                .Include(unidade => unidade.EmpresaCadastro)
+                .Where(unidade => unidade.EmpresaCadastro != null
+                    && empresasPermitidas.Contains(unidade.EmpresaCadastro.Numero)
+                    && unidade.NumeroRevenda > 0)
+                .Select(unidade => unidade.NumeroRevenda)
+                .Distinct()
+                .OrderBy(revenda => revenda)
+                .ToListAsync();
         }
 
         private static object ApplyEmpresaScope(object requestedEmpresa, IReadOnlyCollection<int> empresasPermitidas)
@@ -879,6 +1002,31 @@ namespace DRFlowHub.Api.Services
                 throw new UnauthorizedAccessException("Perfil sem acesso a empresa selecionada no B.I de pecas.");
 
             return string.Join(",", requestedEmpresas);
+        }
+
+        private static object ApplyRevendaScope(object requestedRevenda, IReadOnlyCollection<int> revendasPermitidas)
+        {
+            if (revendasPermitidas.Count == 0)
+                return "0";
+
+            if (requestedRevenda == DBNull.Value)
+                return string.Join(",", revendasPermitidas);
+
+            var requested = requestedRevenda.ToString()?.Trim() ?? string.Empty;
+            var requestedRevendas = requested
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(value => int.TryParse(value, out var revenda) ? revenda : 0)
+                .Where(revenda => revenda > 0)
+                .Distinct()
+                .ToList();
+
+            if (requestedRevendas.Count == 0)
+                return string.Join(",", revendasPermitidas);
+
+            if (requestedRevendas.Any(revenda => !revendasPermitidas.Contains(revenda)))
+                throw new UnauthorizedAccessException("Perfil sem acesso a revenda selecionada no B.I de pecas.");
+
+            return string.Join(",", requestedRevendas);
         }
 
         private static object NormalizeFilter(string? value)
@@ -968,6 +1116,12 @@ namespace DRFlowHub.Api.Services
         {
             var ordinal = reader.GetOrdinal(column);
             return reader.IsDBNull(ordinal) ? 0 : Convert.ToInt32(reader.GetValue(ordinal));
+        }
+
+        private static DateTime GetDateTime(DbDataReader reader, string column)
+        {
+            var ordinal = reader.GetOrdinal(column);
+            return reader.IsDBNull(ordinal) ? DateTime.MinValue : Convert.ToDateTime(reader.GetValue(ordinal), CultureInfo.InvariantCulture);
         }
     }
 }

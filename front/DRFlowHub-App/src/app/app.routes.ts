@@ -19,6 +19,7 @@ import { EmpresasRevendasPage } from './pages/empresas-revendas/empresas-revenda
 import { PerfisPage } from './pages/perfis/perfis';
 
 const PECAS_BI_ACCESSES = [
+  'pecas-admin',
   'vendas-pecas',
   'pecas-bi-renault',
   'pecas-bi-nissan',

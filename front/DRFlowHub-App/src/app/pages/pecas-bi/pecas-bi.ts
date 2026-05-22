@@ -6,7 +6,7 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../core/auth.service';
 import { Empresa, Unidade } from '../../core/models';
-import { PecasBiData, PecaVendaMensal, PecaVendedor, PecasBiService } from '../../core/pecas-bi.service';
+import { PecasBiData, PecaCanalDetalhe, PecaVendaMensal, PecaVendedor, PecasBiService } from '../../core/pecas-bi.service';
 import { ProfileFlowService } from '../../core/profile-flow.service';
 import { ThemeService } from '../../core/theme.service';
 import { UnidadesService } from '../../core/unidades.service';
@@ -47,9 +47,11 @@ export class PecasBiPage implements OnInit {
   readonly data = signal<PecasBiData | null>(null);
   readonly empresas = signal<Empresa[]>([]);
   readonly revendas = signal<Unidade[]>([]);
+  readonly empresasPermitidasServidor = signal<number[] | null>(null);
+  readonly revendasPermitidasServidor = signal<number[] | null>(null);
   readonly empresaNumero = signal<number | null>(null);
   readonly revendasSelecionadas = signal<number[]>([]);
-  readonly dataInicio = signal(this.toDateInput(this.monthsAgo(1)));
+  readonly dataInicio = signal(this.toDateInput(this.firstDayOfCurrentMonth()));
   readonly dataFim = signal(this.toDateInput(new Date()));
   readonly canaisSelecionados = signal<string[]>([]);
   readonly metaModalSeller = signal<PecaVendedor | null>(null);
@@ -58,6 +60,10 @@ export class PecasBiPage implements OnInit {
   readonly metaDataFimDraft = signal('');
   readonly savingMeta = signal(false);
   readonly hoveredChannel = signal<string | null>(null);
+  readonly channelReportOpen = signal(false);
+  readonly channelReportLoading = signal(false);
+  readonly channelReportName = signal('');
+  readonly channelReportItems = signal<PecaCanalDetalhe[]>([]);
   readonly revendaPickerOpen = signal(false);
   readonly canalPickerOpen = signal(false);
   readonly pecaSortField = signal<'nome' | 'quantidade' | 'faturamento'>('faturamento');
@@ -85,12 +91,20 @@ export class PecasBiPage implements OnInit {
   readonly userEmpresaNumero = computed(() => this.revendas().find((revenda) => revenda.id === this.user()?.unidadeId)?.empresaNumero ?? null);
   readonly hasPecasBiAcessoGeral = computed(() => {
     const user = this.user();
+    const acessos = user?.acessos ?? [];
+    const hasEmpresaSpecificAccess = acessos.some((acesso) => Number.isFinite(PECAS_BI_EMPRESA_BY_ACCESS[acesso]));
     return user?.role === 'Admin'
       || user?.role === 'TI'
       || this.isGerenteGeralPecas()
-      || (user?.acessos ?? []).includes('vendas-pecas');
+      || (user?.acessos ?? []).includes('pecas-admin')
+      || ((user?.acessos ?? []).includes('vendas-pecas') && !hasEmpresaSpecificAccess);
   });
   readonly empresasPermitidasPorPerfil = computed(() => {
+    const empresasServidor = this.empresasPermitidasServidor();
+    if (empresasServidor) {
+      return empresasServidor;
+    }
+
     if (this.hasPecasBiAcessoGeral()) {
       return null;
     }
@@ -102,6 +116,7 @@ export class PecasBiPage implements OnInit {
     return [...new Set(empresas)];
   });
   readonly canUseEmpresaRevendaFilters = computed(() => true);
+  readonly isEmpresaFilterLocked = computed(() => this.isGerenteEmpresaPecas() || (this.empresasPermitidasPorPerfil()?.length === 1));
   readonly empresasDisponiveis = computed(() => {
     const empresaNumero = this.userEmpresaNumero();
     if (this.isGerenteEmpresaPecas()) {
@@ -118,9 +133,11 @@ export class PecasBiPage implements OnInit {
   readonly revendasDaEmpresa = computed(() => {
     const empresa = this.isGerenteEmpresaPecas() ? this.userEmpresaNumero() : this.empresaNumero();
     const empresasPermitidas = this.empresasPermitidasPorPerfil();
+    const revendasPermitidas = this.revendasPermitidasServidor();
     return this.revendas()
       .filter((revenda) => !empresa || revenda.empresaNumero === empresa)
       .filter((revenda) => !empresasPermitidas || empresasPermitidas.includes(revenda.empresaNumero))
+      .filter((revenda) => !revendasPermitidas || revendasPermitidas.includes(revenda.numeroRevenda))
       .sort((a, b) => a.numeroRevenda - b.numeroRevenda || a.revenda.localeCompare(b.revenda));
   });
   readonly revendasSelecionadasLabel = computed(() => {
@@ -145,6 +162,7 @@ export class PecasBiPage implements OnInit {
   });
   readonly faturamentoTotal = computed(() => this.vendas().reduce((total, item) => total + item.faturamento, 0));
   readonly margemTotal = computed(() => this.vendas().reduce((total, item) => total + item.margem, 0));
+  readonly rentabilidadeTotal = computed(() => this.vendas().reduce((total, item) => total + item.rentabilidade, 0));
   readonly quantidadeTotal = computed(() => this.vendas().reduce((total, item) => total + item.quantidade, 0));
   readonly ticketMedio = computed(() => this.quantidadeTotal() ? this.faturamentoTotal() / this.quantidadeTotal() : 0);
   readonly margemPercentual = computed(() => this.faturamentoTotal() ? (this.margemTotal() / this.faturamentoTotal()) * 100 : 0);
@@ -154,7 +172,7 @@ export class PecasBiPage implements OnInit {
       return 0;
     }
 
-    return this.vendas().reduce((total, item) => total + (item.rentabilidadePercentual * item.faturamento), 0) / faturamento;
+    return (this.rentabilidadeTotal() / faturamento) * 100;
   });
   readonly crescimento = computed(() => {
     const vendas = this.vendas();
@@ -249,6 +267,9 @@ export class PecasBiPage implements OnInit {
       canal: this.canaisSelecionados(),
     }).subscribe({
       next: (data) => {
+        this.empresasPermitidasServidor.set(data.empresasPermitidas ?? null);
+        this.revendasPermitidasServidor.set(data.revendasPermitidas ?? null);
+        this.applyUserScopeDefaults();
         this.data.set(data);
         this.loading.set(false);
         void this.spinner.hide();
@@ -277,26 +298,8 @@ export class PecasBiPage implements OnInit {
     return total ? Math.max(0, (value / total) * 100) : 0;
   }
 
-  donutGradient(): string {
-    const colors = ['var(--color-brand-blue)', 'var(--color-brand-green-strong)', '#f59e0b', '#8b5cf6', '#64748b'];
-    const total = this.canaisTotal();
-    if (!total) {
-      return 'conic-gradient(#e2e8f0 0 100%)';
-    }
-
-    let start = 0;
-    const segments = this.canaisData().map((item, index) => {
-      const end = start + (item.faturamento / total) * 100;
-      const segment = `${colors[index % colors.length]} ${start.toFixed(2)}% ${end.toFixed(2)}%`;
-      start = end;
-      return segment;
-    });
-
-    return `conic-gradient(${segments.join(', ')})`;
-  }
-
   channelColor(index: number): string {
-    return ['#2454d6', '#1fae6a', '#f59e0b', '#8b5cf6', '#64748b'][index % 5];
+    return ['#06a6c8', '#2f7ed8', '#f5a623', '#78b800', '#6f7f8c', '#d84f8f', '#7b61ff'][index % 7];
   }
 
   channelOffsetPercent(index: number): number {
@@ -310,6 +313,45 @@ export class PecasBiPage implements OnInit {
       .reduce((sum, item) => sum + (item.faturamento / total) * 100, 0);
   }
 
+  channelTransform(index: number): string {
+    const item = this.canaisData()[index];
+    if (!item || this.hoveredChannel() !== item.nome) {
+      return '';
+    }
+
+    const angle = this.channelMidAngle(index);
+    const distance = 5;
+    return `translate(${Math.cos(angle) * distance} ${Math.sin(angle) * distance})`;
+  }
+
+  channelSlicePath(index: number): string {
+    const total = this.canaisTotal();
+    const item = this.canaisData()[index];
+    if (!total || !item) {
+      return '';
+    }
+
+    const startPercent = this.channelOffsetPercent(index);
+    const endPercent = startPercent + this.percentOfTotal(item.faturamento, total);
+    return this.describePieSlice(60, 60, 47, startPercent, endPercent);
+  }
+
+  channelLabelX(index: number): number {
+    return 60 + Math.cos(this.channelMidAngle(index)) * 29;
+  }
+
+  channelLabelY(index: number): number {
+    return 60 + Math.sin(this.channelMidAngle(index)) * 29;
+  }
+
+  shouldShowChannelClients(item: { nome: string }): boolean {
+    return this.hoveredChannel() === item.nome;
+  }
+
+  shouldShowChannelPercent(item: { faturamento: number }): boolean {
+    return this.percentOfTotal(item.faturamento, this.canaisTotal()) >= 7;
+  }
+
   hoveredChannelValue(): number {
     const channel = this.hoveredChannel();
     return this.canaisData().find((item) => item.nome === channel)?.faturamento ?? this.canaisTotal();
@@ -318,6 +360,92 @@ export class PecasBiPage implements OnInit {
   hoveredChannelLabel(): string {
     const channel = this.hoveredChannel();
     return channel ? this.channelLabel(channel) : 'Total';
+  }
+
+  hoveredChannelClients(): number {
+    const channel = this.hoveredChannel();
+    return this.canaisData().find((item) => item.nome === channel)?.clientesAtendidos ?? 0;
+  }
+
+  openChannelReport(channel: string): void {
+    if (!channel) {
+      return;
+    }
+
+    this.channelReportName.set(channel);
+    this.channelReportOpen.set(true);
+    this.channelReportLoading.set(true);
+    this.channelReportItems.set([]);
+
+    this.service.loadCanalDetalhes(channel, {
+      dataInicio: this.dataInicio(),
+      dataFim: this.dataFim(),
+      empresa: this.empresaNumero(),
+      revenda: this.revendasSelecionadas(),
+      canal: channel,
+    }).subscribe({
+      next: (items) => {
+        this.channelReportItems.set(items);
+        this.channelReportLoading.set(false);
+      },
+      error: () => {
+        this.channelReportLoading.set(false);
+        this.toastr.error('Nao foi possivel gerar o relatorio do canal.', 'B.I Pecas');
+      },
+    });
+  }
+
+  closeChannelReport(): void {
+    this.channelReportOpen.set(false);
+    this.channelReportName.set('');
+    this.channelReportItems.set([]);
+  }
+
+  downloadChannelReportPdf(): void {
+    if (!this.isBrowser || !this.channelReportItems().length) {
+      return;
+    }
+
+    const title = `Relatorio do canal - ${this.channelLabel(this.channelReportName())}`;
+    const rows = this.channelReportItems().map((item) => `
+      <tr>
+        <td>${this.escapeHtml(item.cliente)}</td>
+        <td>${this.escapeHtml(item.numeroNotaFiscal)}</td>
+        <td>${this.formatDate(item.data)}</td>
+        <td>${this.formatMoney(item.faturamento)}</td>
+      </tr>
+    `).join('');
+    const report = window.open('', '_blank', 'width=1100,height=800');
+    if (!report) {
+      this.toastr.warning('Permita pop-ups para gerar o PDF.', 'Relatorio');
+      return;
+    }
+
+    report.document.write(`
+      <html>
+        <head>
+          <title>${this.escapeHtml(title)}</title>
+          <style>
+            body { font-family: Arial, sans-serif; margin: 28px; color: #111827; }
+            h1 { margin: 0 0 18px; font-size: 22px; }
+            table { width: 100%; border-collapse: collapse; }
+            th, td { padding: 10px 12px; border-bottom: 1px solid #d1d5db; text-align: left; font-size: 12px; }
+            th { background: #f3f4f6; text-transform: uppercase; }
+            td:last-child, th:last-child { text-align: right; }
+          </style>
+        </head>
+        <body>
+          <h1>${this.escapeHtml(title)}</h1>
+          <table>
+            <thead><tr><th>Cliente</th><th>Nota fiscal</th><th>Data</th><th>Faturamento</th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </body>
+      </html>
+    `);
+    report.document.close();
+    report.focus();
+    report.print();
   }
 
   formatMoney(value: number): string {
@@ -398,6 +526,46 @@ export class PecasBiPage implements OnInit {
     return Math.max(0, Math.min(value, 100));
   }
 
+  private channelMidAngle(index: number): number {
+    const start = this.channelOffsetPercent(index);
+    const item = this.canaisData()[index];
+    const size = item ? this.percentOfTotal(item.faturamento, this.canaisTotal()) : 0;
+    return ((start + size / 2) / 100) * Math.PI * 2 - Math.PI / 2;
+  }
+
+  private describePieSlice(cx: number, cy: number, radius: number, startPercent: number, endPercent: number): string {
+    if (endPercent - startPercent >= 99.999) {
+      return `M ${cx} ${cy - radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy + radius} A ${radius} ${radius} 0 1 1 ${cx} ${cy - radius} Z`;
+    }
+
+    const start = this.pointOnCircle(cx, cy, radius, startPercent);
+    const end = this.pointOnCircle(cx, cy, radius, endPercent);
+    const largeArcFlag = endPercent - startPercent > 50 ? 1 : 0;
+    return `M ${cx} ${cy} L ${start.x} ${start.y} A ${radius} ${radius} 0 ${largeArcFlag} 1 ${end.x} ${end.y} Z`;
+  }
+
+  private pointOnCircle(cx: number, cy: number, radius: number, percent: number): { x: number; y: number } {
+    const angle = (percent / 100) * Math.PI * 2 - Math.PI / 2;
+    return {
+      x: cx + Math.cos(angle) * radius,
+      y: cy + Math.sin(angle) * radius,
+    };
+  }
+
+  private formatDate(value: string): string {
+    const date = new Date(value);
+    return Number.isNaN(date.getTime()) ? '' : date.toLocaleDateString('pt-BR');
+  }
+
+  private escapeHtml(value: string): string {
+    return String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
   openMetaModal(seller: PecaVendedor): void {
     if (!seller.cpfVendedor) {
       this.toastr.warning('Vendedor sem CPF no retorno do Oracle.', 'Meta de vendas');
@@ -465,7 +633,12 @@ export class PecasBiPage implements OnInit {
   }
 
   setEmpresa(value: string | number | null): void {
-    if (!this.canUseEmpresaRevendaFilters() || this.isGerenteEmpresaPecas()) {
+    if (!this.canUseEmpresaRevendaFilters() || this.isEmpresaFilterLocked()) {
+      const empresaObrigatoria = this.isGerenteEmpresaPecas()
+        ? this.userEmpresaNumero()
+        : this.empresasPermitidasPorPerfil()?.[0] ?? null;
+      this.empresaNumero.set(empresaObrigatoria);
+      this.revendasSelecionadas.set([]);
       return;
     }
 

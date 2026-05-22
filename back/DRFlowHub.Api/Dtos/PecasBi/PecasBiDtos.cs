@@ -13,6 +13,8 @@ namespace DRFlowHub.Api.Dtos.PecasBi
     {
         public DateTime AtualizadoEm { get; set; }
         public bool PodeVerRankingVendedores { get; set; }
+        public List<int>? EmpresasPermitidas { get; set; }
+        public List<int>? RevendasPermitidas { get; set; }
         public List<PecaVendaMensalDto> VendasMensais { get; set; } = new();
         public List<PecaCategoriaDto> Categorias { get; set; } = new();
         public List<PecaRankingDto> Pecas { get; set; } = new();
@@ -28,6 +30,7 @@ namespace DRFlowHub.Api.Dtos.PecasBi
         public string Mes { get; set; } = string.Empty;
         public decimal Faturamento { get; set; }
         public decimal Margem { get; set; }
+        public decimal Rentabilidade { get; set; }
         public decimal RentabilidadePercentual { get; set; }
         public int Quantidade { get; set; }
     }
@@ -47,6 +50,7 @@ namespace DRFlowHub.Api.Dtos.PecasBi
         public int Quantidade { get; set; }
         public decimal Faturamento { get; set; }
         public decimal MargemPercentual { get; set; }
+        public decimal Rentabilidade { get; set; }
         public decimal RentabilidadePercentual { get; set; }
         public int GiroDias { get; set; }
     }
@@ -66,6 +70,16 @@ namespace DRFlowHub.Api.Dtos.PecasBi
     public class PecaCanalDto
     {
         public string Nome { get; set; } = string.Empty;
+        public decimal Faturamento { get; set; }
+        public int ClientesAtendidos { get; set; }
+    }
+
+    public class PecaCanalDetalheDto
+    {
+        public string Canal { get; set; } = string.Empty;
+        public string Cliente { get; set; } = string.Empty;
+        public string NumeroNotaFiscal { get; set; } = string.Empty;
+        public DateTime Data { get; set; }
         public decimal Faturamento { get; set; }
     }
 
