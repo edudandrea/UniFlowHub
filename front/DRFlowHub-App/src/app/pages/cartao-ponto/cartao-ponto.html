@@ -52,7 +52,7 @@
             Arquivo
             <select [value]="selectedArquivoId() || ''" (change)="changeArquivo($any($event.target).value)">
               @for (arquivo of arquivos(); track arquivo.id) {
-                <option [value]="arquivo.id">{{ arquivo.nomeArquivo }} - {{ arquivo.unidadeNome || arquivo.cnpjUnidade || 'Unidade nao identificada' }} - {{ arquivo.dataImportacao | date: 'dd/MM/yyyy HH:mm' }}</option>
+                <option [value]="arquivo.id">{{ arquivo.nomeArquivo }} - {{ arquivo.unidadeNome || arquivo.cnpjUnidade || 'Unidade Não identificada' }} - {{ arquivo.dataImportacao | date: 'dd/MM/yyyy HH:mm' }}</option>
               }
             </select>
           </label>
@@ -82,7 +82,7 @@
             <article class="request-card" (click)="openFuncionario(funcionario)">
               <div>
                 <h3>{{ funcionario.nome }}</h3>
-                <p>{{ funcionario.unidadeNome || funcionario.cnpjUnidade || 'Unidade nao identificada' }} - {{ funcionario.cpf }}</p>
+                <p>{{ funcionario.unidadeNome || funcionario.cnpjUnidade || 'Unidade Não identificada' }} - {{ funcionario.cpf }}</p>
               </div>
               <span class="status">{{ funcionario.totalDias }} dia(s)</span>
               <small>{{ funcionario.totalRegistros }} marcacao(oes)</small>
@@ -98,7 +98,7 @@
             <article class="request-card" (click)="openFolhaMes(folha)">
               <div>
                 <h3>{{ folha.label }}</h3>
-                <p>{{ folha.unidadeNome || folha.cnpjUnidade || 'Unidade nao identificada' }}</p>
+                <p>{{ folha.unidadeNome || folha.cnpjUnidade || 'Unidade Não identificada' }}</p>
               </div>
               <span class="status">{{ folha.totalDias }} dia(s)</span>
               <small>{{ folha.totalRegistros }} marcacao(oes)</small>

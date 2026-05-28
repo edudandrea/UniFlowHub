@@ -115,7 +115,7 @@ export interface ChamadoTI {
   userid: number;
 }
 
-export interface ChamadoTIComunicacao {
+export interface ChamadoTIComunicação {
   id: number;
   chamadoTIId: number;
   mensagem: string;
@@ -126,7 +126,7 @@ export interface ChamadoTIComunicacao {
   dataLeitura?: string | null;
 }
 
-export interface SolicitacaoRHComunicacao {
+export interface SolicitacaoRHComunicação {
   id: number;
   solicitacaoRHId: number;
   mensagem: string;
@@ -136,7 +136,7 @@ export interface SolicitacaoRHComunicacao {
   dataCriacao: string;
 }
 
-export interface SolicitacaoCompraComunicacao {
+export interface SolicitacaoCompraComunicação {
   id: number;
   solicitacaoCompraId: number;
   mensagem: string;
@@ -283,6 +283,37 @@ export interface VeiculoEstoque {
   reservado: boolean;
   origemReserva: string;
   dataReserva?: string | null;
+}
+
+export interface RepasseVeiculo {
+  empresa: number;
+  revenda: number;
+  nomeEmpresa: string;
+  nomeRevenda: string;
+  modelo: string;
+  placa: string;
+  custoContabil: number;
+  situacao: string;
+  diasEstoque: number;
+}
+
+export interface RepasseDashboard {
+  veiculos: RepasseVeiculo[];
+  topDiasEstoque: RepasseVeiculo[];
+  resumos: RepasseResumoEmpresa[];
+}
+
+export interface RepasseResumoEmpresa {
+  empresa: number;
+  nomeEmpresa: string;
+  volumeDe: number;
+  volumePara: number;
+  custoDe: number;
+  custoPara: number;
+  ticketMedio: number;
+  mediaGiroEstoque: number;
+  distorcao: number;
+  limiteAutorizado: number;
 }
 
 export interface CartaoPontoArquivo {

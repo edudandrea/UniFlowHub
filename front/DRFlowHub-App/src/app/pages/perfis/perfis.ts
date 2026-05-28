@@ -35,8 +35,92 @@ export class PerfisPage implements OnInit {
     for (const acesso of this.acessos()) {
       groups.set(acesso.grupo, [...(groups.get(acesso.grupo) ?? []), acesso]);
     }
-    return Array.from(groups.entries()).map(([grupo, items]) => ({ grupo, items }));
+    return Array.from(groups.entries())
+      .sort(([a], [b]) => a.localeCompare(b, 'pt-BR'))
+      .map(([grupo, items]) => ({
+        grupo,
+        items: items.sort((left, right) => left.nome.localeCompare(right.nome, 'pt-BR')),
+      }));
   });
+
+  readonly openedGroups = signal<Set<string>>(new Set());
+
+  // Group modal animation state
+  readonly groupModalOpen = signal(false);
+  readonly groupModalGroup = signal<string | null>(null);
+  readonly groupModalStyle = signal<{ transform: string; initialTransform: string; width: number; height: number } | null>(null);
+  readonly groupModalAnimating = signal(false);
+  readonly groupModalItems = computed(() => {
+    const g = this.acessosPorGrupo().find((x) => x.grupo === this.groupModalGroup());
+    return g ? g.items : [];
+  });
+
+  groupExpanded(grupo: string): boolean {
+    return this.openedGroups().has(grupo);
+  }
+
+  toggleGroup(grupo: string): void {
+    const current = new Set(this.openedGroups());
+    if (current.has(grupo)) {
+      current.delete(grupo);
+    } else {
+      current.add(grupo);
+    }
+    this.openedGroups.set(current);
+  }
+
+  openGroupModal(event: Event, grupo: string): void {
+    event.stopPropagation();
+    const target = (event.currentTarget ?? event.target) as HTMLElement;
+    if (!target) {
+      this.groupModalGroup.set(grupo);
+      this.groupModalOpen.set(true);
+      return;
+    }
+
+    const rect = target.getBoundingClientRect();
+    const modalWidth = Math.min(900, Math.round(window.innerWidth * 0.9));
+    const modalHeight = Math.min(720, Math.round(window.innerHeight * 0.8));
+    const originCenterX = rect.left + rect.width / 2;
+    const originCenterY = rect.top + rect.height / 2;
+    const centerX = window.innerWidth / 2;
+    const centerY = window.innerHeight / 2;
+    const tx = Math.round(originCenterX - centerX);
+    const ty = Math.round(originCenterY - centerY);
+    const scale = Math.max(0.28, rect.width / modalWidth);
+
+    const initial = `translate(calc(-50% + ${tx}px), calc(-50% + ${ty}px)) scale(${scale})`;
+    const final = `translate(-50%, -50%) scale(1)`;
+
+    this.groupModalStyle.set({ transform: initial, initialTransform: initial, width: modalWidth, height: modalHeight });
+    this.groupModalGroup.set(grupo);
+    this.groupModalOpen.set(true);
+
+    requestAnimationFrame(() => {
+      this.groupModalAnimating.set(true);
+      requestAnimationFrame(() => {
+        this.groupModalStyle.update((s) => (s ? { ...s, transform: final } : s));
+      });
+    });
+  }
+
+  closeGroupModal(): void {
+    if (!this.groupModalOpen()) return;
+    const s = this.groupModalStyle();
+    if (!s) {
+      this.groupModalOpen.set(false);
+      this.groupModalGroup.set(null);
+      return;
+    }
+
+    this.groupModalStyle.set({ ...s, transform: s.initialTransform });
+    this.groupModalAnimating.set(false);
+    window.setTimeout(() => {
+      this.groupModalOpen.set(false);
+      this.groupModalGroup.set(null);
+      this.groupModalStyle.set(null);
+    }, 360);
+  }
 
   ngOnInit(): void {
     this.load();
@@ -116,7 +200,7 @@ export class PerfisPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel salvar o perfil.', 'Erro');
+        this.toastr.error('Não foi possível salvar o perfil.', 'Erro');
       },
     });
   }

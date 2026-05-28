@@ -260,6 +260,7 @@ namespace DRFlowHub.Api.Services
                     "pecas-bi-mg",
                     "pecas-bi-geely",
                     "veiculos",
+                    "veiculos-repasses",
                     "veiculos-bi",
                     "usuarios",
                     "empresas-revendas",

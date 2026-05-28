@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
+import { AutoRefreshControlComponent } from '../../core/auto-refresh-control.component';
 import { AuthService } from '../../core/auth.service';
 import { Empresa, Unidade } from '../../core/models';
 import { PecasBiData, PecaCanalDetalhe, PecaVendaMensal, PecaVendedor, PecasBiService } from '../../core/pecas-bi.service';
@@ -26,7 +27,7 @@ const PECAS_BI_EMPRESA_BY_ACCESS: Record<string, number> = {
 
 @Component({
   selector: 'app-pecas-bi',
-  imports: [DatePipe, FormsModule],
+  imports: [DatePipe, FormsModule, AutoRefreshControlComponent],
   templateUrl: './pecas-bi.html',
   styleUrl: './pecas-bi.scss',
 })
@@ -213,7 +214,7 @@ export class PecasBiPage implements OnInit {
     }
 
     if (status === 'warning') {
-      return 'Voce esta perto da meta. Falta pouco para fechar o periodo com chave de ouro.';
+      return 'Você está perto da meta. Falta pouco para fechar o período com chave de ouro.';
     }
 
     return 'A meta ainda precisa de atencao. Foque nas oportunidades abertas e acompanhe sua evolucao.';
@@ -242,7 +243,7 @@ export class PecasBiPage implements OnInit {
   loadEmpresas(): void {
     this.unidadesService.listEmpresas().subscribe({
       next: (empresas) => this.empresas.set(empresas.slice().sort((a, b) => a.numero - b.numero || a.nome.localeCompare(b.nome))),
-      error: () => this.toastr.error('Nao foi possivel carregar as empresas cadastradas.', 'B.I Pecas'),
+      error: () => this.toastr.error('Não foi possível carregar as empresas cadastradas.', 'B.I Peças'),
     });
   }
 
@@ -252,7 +253,7 @@ export class PecasBiPage implements OnInit {
         this.revendas.set(revendas);
         this.applyUserScopeDefaults();
       },
-      error: () => this.toastr.error('Nao foi possivel carregar as revendas cadastradas.', 'B.I Pecas'),
+      error: () => this.toastr.error('Não foi possível carregar as revendas cadastradas.', 'B.I Peças'),
     });
   }
 
@@ -277,7 +278,7 @@ export class PecasBiPage implements OnInit {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar o B.I de venda de pecas.', 'Erro');
+        this.toastr.error('Não foi possível carregar o B.I de venda de peças.', 'Erro');
       },
     });
   }
@@ -390,7 +391,7 @@ export class PecasBiPage implements OnInit {
       },
       error: () => {
         this.channelReportLoading.set(false);
-        this.toastr.error('Nao foi possivel gerar o relatorio do canal.', 'B.I Pecas');
+        this.toastr.error('Não foi possível gerar o relatório do canal.', 'B.I Peças');
       },
     });
   }
@@ -406,7 +407,7 @@ export class PecasBiPage implements OnInit {
       return;
     }
 
-    const title = `Relatorio do canal - ${this.channelLabel(this.channelReportName())}`;
+    const title = `Relatório do canal - ${this.channelLabel(this.channelReportName())}`;
     const rows = this.channelReportItems().map((item) => `
       <tr>
         <td>${this.escapeHtml(item.cliente)}</td>
@@ -417,7 +418,7 @@ export class PecasBiPage implements OnInit {
     `).join('');
     const report = window.open('', '_blank', 'width=1100,height=800');
     if (!report) {
-      this.toastr.warning('Permita pop-ups para gerar o PDF.', 'Relatorio');
+      this.toastr.warning('Permita pop-ups para gerar o PDF.', 'Relatório');
       return;
     }
 
@@ -602,12 +603,12 @@ export class PecasBiPage implements OnInit {
     }
 
     if (!this.metaDataInicioDraft() || !this.metaDataFimDraft()) {
-      this.toastr.error('Informe o periodo da meta.', 'Meta de vendas');
+      this.toastr.error('Informe o período da meta.', 'Meta de vendas');
       return;
     }
 
     if (this.metaDataInicioDraft() > this.metaDataFimDraft()) {
-      this.toastr.error('A data inicial da meta nao pode ser maior que a data final.', 'Meta de vendas');
+      this.toastr.error('A data inicial da meta não pode ser maior que a data final.', 'Meta de vendas');
       return;
     }
 
@@ -622,12 +623,12 @@ export class PecasBiPage implements OnInit {
       next: () => {
         this.savingMeta.set(false);
         this.metaModalSeller.set(null);
-        this.toastr.success('Meta de vendas atualizada.', 'B.I Pecas');
+        this.toastr.success('Meta de vendas atualizada.', 'B.I Peças');
         this.load();
       },
       error: () => {
         this.savingMeta.set(false);
-        this.toastr.error('Nao foi possivel salvar a meta do vendedor.', 'Erro');
+        this.toastr.error('Não foi possível salvar a meta do vendedor.', 'Erro');
       },
     });
   }

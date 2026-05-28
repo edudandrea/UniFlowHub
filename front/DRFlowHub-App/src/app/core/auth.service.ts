@@ -76,7 +76,11 @@ export class AuthService {
 
   hasAccess(access: string): boolean {
     const user = this.user();
-    return !!user && (user.role === 'Admin' || (user.acessos ?? []).includes(access));
+    return !!user && (
+      user.role === 'Admin'
+      || (user.role === 'TI' && access === 'veiculos-repasses')
+      || (user.acessos ?? []).includes(access)
+    );
   }
 
   hasAnyAccess(accesses: string[]): boolean {

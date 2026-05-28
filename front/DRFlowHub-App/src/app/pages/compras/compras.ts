@@ -7,7 +7,7 @@ import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../core/auth.service';
 import { ComprasService } from '../../core/compras.service';
-import { SolicitacaoCompra, SolicitacaoCompraComunicacao, SolicitacaoCompraPayload, SolicitacaoCompraUpdatePayload, Unidade } from '../../core/models';
+import { SolicitacaoCompra, SolicitacaoCompraComunicação, SolicitacaoCompraPayload, SolicitacaoCompraUpdatePayload, Unidade } from '../../core/models';
 import { ThemeService } from '../../core/theme.service';
 import { ProfileFlowService } from '../../core/profile-flow.service';
 import { UnidadesService } from '../../core/unidades.service';
@@ -44,7 +44,7 @@ export class ComprasPage implements OnInit, OnDestroy {
   readonly modalOpen = signal(false);
   readonly createModalOpen = signal(false);
   readonly detailTab = signal<'detalhes' | 'comunicacao'>('detalhes');
-  readonly comunicacoes = signal<SolicitacaoCompraComunicacao[]>([]);
+  readonly comunicacoes = signal<SolicitacaoCompraComunicação[]>([]);
   readonly loadingComunicacoes = signal(false);
   readonly sendingMessage = signal(false);
   readonly activeTab = signal<CompraTab>('minhas');
@@ -161,7 +161,7 @@ export class ComprasPage implements OnInit, OnDestroy {
           this.form.patchValue({ unidade: userUnidade });
         }
       },
-      error: () => this.toastr.error('Nao foi possivel carregar as unidades.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar as unidades.', 'Erro'),
     });
   }
 
@@ -178,7 +178,7 @@ export class ComprasPage implements OnInit, OnDestroy {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar as solicitacoes de compras.', 'Compras');
+        this.toastr.error('Não foi possível carregar as solicitações de compras.', 'Compras');
       },
     });
   }
@@ -246,7 +246,7 @@ export class ComprasPage implements OnInit, OnDestroy {
   submit(): void {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
-      this.toastr.warning('Preencha os campos obrigatorios.', 'Atencao');
+      this.toastr.warning('Preencha os campos obrigatórios.', 'Atenção');
       return;
     }
 
@@ -277,11 +277,11 @@ export class ComprasPage implements OnInit, OnDestroy {
         }
         this.saving.set(false);
         this.closeCreateModal();
-        this.toastr.success('Solicitacao enviada para aprovacao da Diretoria.', 'Compras');
+        this.toastr.success('Solicitação enviada para aprovação da Diretoria.', 'Compras');
       },
       error: (error) => {
         this.saving.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel criar a solicitacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível criar a solicitação.', error), 'Erro');
       },
     });
   }
@@ -303,7 +303,7 @@ export class ComprasPage implements OnInit, OnDestroy {
       },
       error: () => {
         this.approving.set(false);
-        this.toastr.error('Nao foi possivel registrar a aprovacao.', 'Erro');
+        this.toastr.error('Não foi possível registrar a aprovação.', 'Erro');
       },
     });
   }
@@ -313,24 +313,24 @@ export class ComprasPage implements OnInit, OnDestroy {
     if (!selected || this.isFinalized(selected) || this.messageForm.invalid || this.sendingMessage()) {
       this.messageForm.markAllAsTouched();
       if (this.isFinalized(selected)) {
-        this.toastr.info('Solicitacoes concluidas ou canceladas nao permitem novas mensagens.', 'Compras');
+        this.toastr.info('Solicitações concluídas ou canceladas não permitem novas mensagens.', 'Compras');
       } else if (this.messageForm.invalid) {
-        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atencao');
+        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atenção');
       }
       return;
     }
 
     this.sendingMessage.set(true);
-    this.service.sendComunicacao(selected.id, this.messageForm.controls.mensagem.value).subscribe({
+    this.service.sendComunicação(selected.id, this.messageForm.controls.mensagem.value).subscribe({
       next: (message) => {
         this.comunicacoes.set([...this.comunicacoes(), message]);
         this.messageForm.reset({ mensagem: '' });
         this.sendingMessage.set(false);
-        this.toastr.success('Mensagem enviada.', 'Comunicacao');
+        this.toastr.success('Mensagem enviada.', 'Comunicação');
       },
       error: (error) => {
         this.sendingMessage.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel enviar a mensagem.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível enviar a mensagem.', error), 'Erro');
       },
     });
   }
@@ -339,7 +339,7 @@ export class ComprasPage implements OnInit, OnDestroy {
     const selected = this.selected();
     if (!selected || this.buyerForm.invalid || this.updating()) {
       this.buyerForm.markAllAsTouched();
-      this.toastr.warning('Confira os campos antes de salvar.', 'Atencao');
+      this.toastr.warning('Confira os campos antes de salvar.', 'Atenção');
       return;
     }
 
@@ -354,14 +354,14 @@ export class ComprasPage implements OnInit, OnDestroy {
       },
       error: () => {
         this.updating.set(false);
-        this.toastr.error('Nao foi possivel atualizar a solicitacao.', 'Erro');
+        this.toastr.error('Não foi possível atualizar a solicitação.', 'Erro');
       },
     });
   }
 
   downloadDocument(item = this.selected()): void {
     if (!item?.documentoUrl) {
-      this.toastr.info('Esta solicitacao nao possui documento.', 'Documento');
+      this.toastr.info('Esta solicitação não possui documento.', 'Documento');
       return;
     }
 
@@ -374,7 +374,7 @@ export class ComprasPage implements OnInit, OnDestroy {
         link.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.toastr.error('Nao foi possivel baixar o documento.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível baixar o documento.', 'Erro'),
     });
   }
 
@@ -437,7 +437,7 @@ export class ComprasPage implements OnInit, OnDestroy {
       error: (error) => {
         this.comunicacoes.set([]);
         this.loadingComunicacoes.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar a comunicacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível carregar a comunicação.', error), 'Erro');
       },
     });
   }

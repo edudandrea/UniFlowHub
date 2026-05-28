@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { ChamadoTI, ChamadoTIComunicacao, ChamadoTIPayload } from './models';
+import { ChamadoTI, ChamadoTIComunicação, ChamadoTIPayload } from './models';
 
 const API_URL = '/api';
 
@@ -14,7 +14,7 @@ interface SaveResponse {
 interface CommunicationResponse {
   sucesso: boolean;
   mensagem: string;
-  comunicacao: ChamadoTIComunicacao;
+  comunicacao: ChamadoTIComunicação;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -52,11 +52,11 @@ export class ChamadosTIService {
     return this.http.post<SaveResponse>(`${API_URL}/chamadosti/${id}/reabrir`, {}).pipe(map((response) => response.chamado));
   }
 
-  listComunicacoes(id: number): Observable<ChamadoTIComunicacao[]> {
-    return this.http.get<ChamadoTIComunicacao[]>(`${API_URL}/chamadosti/${id}/comunicacoes`);
+  listComunicacoes(id: number): Observable<ChamadoTIComunicação[]> {
+    return this.http.get<ChamadoTIComunicação[]>(`${API_URL}/chamadosti/${id}/comunicacoes`);
   }
 
-  sendComunicacao(id: number, mensagem: string): Observable<ChamadoTIComunicacao> {
+  sendComunicação(id: number, mensagem: string): Observable<ChamadoTIComunicação> {
     return this.http
       .post<CommunicationResponse>(`${API_URL}/chamadosti/${id}/comunicacoes`, { mensagem })
       .pipe(map((response) => response.comunicacao));
@@ -80,7 +80,7 @@ export class ChamadosTIService {
     return this.http.get(`${API_URL}/chamadosti/${id}/comunicacoes/download`, { responseType: 'blob' });
   }
 
-  markComunicacaoRead(id: number, comunicacaoId: number): Observable<ChamadoTIComunicacao> {
-    return this.http.post<ChamadoTIComunicacao>(`${API_URL}/chamadosti/${id}/comunicacoes/${comunicacaoId}/lida`, {});
+  markComunicaçãoRead(id: number, comunicacaoId: number): Observable<ChamadoTIComunicação> {
+    return this.http.post<ChamadoTIComunicação>(`${API_URL}/chamadosti/${id}/comunicacoes/${comunicacaoId}/lida`, {});
   }
 }

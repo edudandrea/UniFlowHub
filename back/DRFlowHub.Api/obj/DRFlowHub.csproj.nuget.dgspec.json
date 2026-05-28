@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "D:\\Dev\\DRFlowHub\\back\\drflowhub.api\\DRFlowHub.csproj": {}
+    "D:\\Dev\\DRFlowHub\\back\\DRFlowHub.Api\\DRFlowHub.csproj": {}
   },
   "projects": {
-    "D:\\Dev\\DRFlowHub\\back\\drflowhub.api\\DRFlowHub.csproj": {
+    "D:\\Dev\\DRFlowHub\\back\\DRFlowHub.Api\\DRFlowHub.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "D:\\Dev\\DRFlowHub\\back\\drflowhub.api\\DRFlowHub.csproj",
+        "projectUniqueName": "D:\\Dev\\DRFlowHub\\back\\DRFlowHub.Api\\DRFlowHub.csproj",
         "projectName": "DRFlowHub",
-        "projectPath": "D:\\Dev\\DRFlowHub\\back\\drflowhub.api\\DRFlowHub.csproj",
+        "projectPath": "D:\\Dev\\DRFlowHub\\back\\DRFlowHub.Api\\DRFlowHub.csproj",
         "packagesPath": "C:\\Users\\Eduardo\\.nuget\\packages\\",
-        "outputPath": "D:\\Dev\\DRFlowHub\\back\\drflowhub.api\\obj\\",
+        "outputPath": "D:\\Dev\\DRFlowHub\\back\\DRFlowHub.Api\\obj\\",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "C:\\Users\\Eduardo\\AppData\\Roaming\\NuGet\\NuGet.Config"

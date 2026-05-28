@@ -17,6 +17,7 @@ import { VeiculosComponent } from './pages/veiculos/veiculos.component';
 import { VeiculosBiPage } from './pages/veiculos-bi/veiculos-bi';
 import { EmpresasRevendasPage } from './pages/empresas-revendas/empresas-revendas';
 import { PerfisPage } from './pages/perfis/perfis';
+import { RepassesComponent } from './pages/repasses/repasses.component';
 
 const PECAS_BI_ACCESSES = [
   'pecas-admin',
@@ -97,6 +98,11 @@ export const routes: Routes = [
     path: 'veiculos/bi-vendas',
     component: VeiculosBiPage,
     canActivate: [accessGuard(['veiculos-bi'])],
+  },
+  {
+    path: 'veiculos/repasses',
+    component: RepassesComponent,
+    canActivate: [accessGuard(['veiculos-repasses'])],
   },
   {
     path: 'usuarios',

@@ -160,7 +160,7 @@ export class UsuariosPage implements OnInit {
       error: (error) => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar os usuarios.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível carregar os usuarios.', error), 'Erro');
       },
     });
   }
@@ -168,21 +168,21 @@ export class UsuariosPage implements OnInit {
   loadUnidades(): void {
     this.unidadesService.list().subscribe({
       next: (unidades) => this.unidades.set(this.sortRevendas(unidades)),
-      error: (error) => this.toastr.error(this.getErrorMessage('Nao foi possivel carregar as empresas e revendas.', error), 'Erro'),
+      error: (error) => this.toastr.error(this.getErrorMessage('Não foi possível carregar as empresas e revendas.', error), 'Erro'),
     });
   }
 
   loadEmpresas(): void {
     this.unidadesService.listEmpresas().subscribe({
       next: (empresas) => this.empresasCadastro.set(empresas),
-      error: (error) => this.toastr.error(this.getErrorMessage('Nao foi possivel carregar as empresas.', error), 'Erro'),
+      error: (error) => this.toastr.error(this.getErrorMessage('Não foi possível carregar as empresas.', error), 'Erro'),
     });
   }
 
   loadPerfis(): void {
     this.perfisService.list().subscribe({
       next: (perfis) => this.roles.set(perfis.map((perfil) => perfil.nome)),
-      error: () => this.toastr.error('Nao foi possivel carregar os perfis.', 'Usuarios'),
+      error: () => this.toastr.error('Não foi possível carregar os perfis.', 'Usuários'),
     });
   }
 
@@ -286,7 +286,7 @@ export class UsuariosPage implements OnInit {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       if (this.form.invalid) {
-        this.toastr.warning('Confira os campos obrigatorios antes de salvar.', 'Atencao');
+        this.toastr.warning('Confira os campos obrigatórios antes de salvar.', 'Atenção');
       }
       return;
     }
@@ -314,11 +314,11 @@ export class UsuariosPage implements OnInit {
           this.users.set([created, ...this.users()]);
           this.saving.set(false);
           this.modalOpen.set(false);
-          this.toastr.success('Usuario criado com sucesso.', 'Usuarios');
+          this.toastr.success('Usuário criado com sucesso.', 'Usuários');
         },
         error: (error) => {
           this.saving.set(false);
-          this.toastr.error(this.getErrorMessage('Nao foi possivel criar o usuario.', error), 'Erro');
+          this.toastr.error(this.getErrorMessage('Não foi possível criar o usuário.', error), 'Erro');
         },
       });
       return;
@@ -349,11 +349,11 @@ export class UsuariosPage implements OnInit {
         this.selected.set(updated);
         this.saving.set(false);
         this.modalOpen.set(false);
-        this.toastr.success('Usuario atualizado com sucesso.', 'Usuarios');
+        this.toastr.success('Usuário atualizado com sucesso.', 'Usuários');
       },
       error: (error) => {
         this.saving.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel atualizar o usuario.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível atualizar o usuário.', error), 'Erro');
       },
     });
   }
@@ -381,7 +381,7 @@ export class UsuariosPage implements OnInit {
       },
       error: (error) => {
         this.saving.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel salvar a revenda.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível salvar a revenda.', error), 'Erro');
       },
     });
   }
@@ -415,7 +415,7 @@ export class UsuariosPage implements OnInit {
       },
       error: (error) => {
         this.saving.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel salvar a empresa.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível salvar a empresa.', error), 'Erro');
       },
     });
   }

@@ -93,7 +93,7 @@ export class EquipamentosTIPage implements OnInit {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar os equipamentos.', 'TI');
+        this.toastr.error('Não foi possível carregar os equipamentos.', 'TI');
       },
     });
   }
@@ -146,7 +146,7 @@ export class EquipamentosTIPage implements OnInit {
   submit(): void {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
-      this.toastr.warning('Preencha os campos obrigatorios.', 'Atencao');
+      this.toastr.warning('Preencha os campos obrigatórios.', 'Atenção');
       return;
     }
 
@@ -167,14 +167,14 @@ export class EquipamentosTIPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel salvar o equipamento.', 'Erro');
+        this.toastr.error('Não foi possível salvar o equipamento.', 'Erro');
       },
     });
   }
 
   downloadDocument(item = this.selected()): void {
     if (!item?.documentoUrl) {
-      this.toastr.info('Este registro nao possui documento.', 'Documento');
+      this.toastr.info('Este registro não possui documento.', 'Documento');
       return;
     }
 
@@ -187,7 +187,7 @@ export class EquipamentosTIPage implements OnInit {
         link.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.toastr.error('Nao foi possivel baixar o documento.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível baixar o documento.', 'Erro'),
     });
   }
 

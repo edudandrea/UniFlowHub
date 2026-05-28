@@ -119,7 +119,7 @@ export class CartaoPontoPage implements OnInit {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar o controle de ponto.', 'RH');
+        this.toastr.error('Não foi possível carregar o controle de ponto.', 'RH');
       },
     });
   }
@@ -137,7 +137,7 @@ export class CartaoPontoPage implements OnInit {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar os funcionarios.', 'RH');
+        this.toastr.error('Não foi possível carregar os funcionários.', 'RH');
       },
     });
   }
@@ -178,7 +178,7 @@ export class CartaoPontoPage implements OnInit {
       },
       error: () => {
         this.importing.set(false);
-        this.toastr.error('Nao foi possivel importar o TXT.', 'Erro');
+        this.toastr.error('Não foi possível importar o TXT.', 'Erro');
       },
     });
   }
@@ -191,7 +191,7 @@ export class CartaoPontoPage implements OnInit {
         this.registros.set(registros);
         this.modalOpen.set(true);
       },
-      error: () => this.toastr.error('Nao foi possivel carregar o cartao ponto.', 'RH'),
+      error: () => this.toastr.error('Não foi possível carregar o cartão ponto.', 'RH'),
     });
   }
 
@@ -241,7 +241,7 @@ export class CartaoPontoPage implements OnInit {
         this.closeModal();
         this.loadFuncionarios();
       },
-      error: () => this.toastr.error('Nao foi possivel confirmar o ponto.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível confirmar o ponto.', 'Erro'),
     });
   }
 
@@ -253,7 +253,7 @@ export class CartaoPontoPage implements OnInit {
 
     this.service.responder(funcionario.cpf, true, this.canManage() ? this.selectedArquivoId() : null, this.selectedMonth()).subscribe({
       next: () => void this.router.navigate(['/solicitacoes']),
-      error: () => this.toastr.error('Nao foi possivel registrar a necessidade de ajuste.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível registrar a necessidade de ajuste.', 'Erro'),
     });
   }
 
@@ -295,7 +295,7 @@ export class CartaoPontoPage implements OnInit {
     this.selectedFuncionario.set(funcionario);
     this.service.listRegistros(funcionario.cpf).subscribe({
       next: (registros) => this.registros.set(registros),
-      error: () => this.toastr.error('Nao foi possivel carregar suas folhas ponto.', 'RH'),
+      error: () => this.toastr.error('Não foi possível carregar suas folhas ponto.', 'RH'),
     });
   }
 

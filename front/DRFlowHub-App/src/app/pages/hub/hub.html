@@ -33,13 +33,21 @@
 
     <section class="dashboard-intro">
       <div>
-        <p class="system-name">{{ user()?.departamento || 'Setor' }}</p>
+        <p class="system-name">{{ dashboardScopeLabel() }}</p>
         <h2>{{ greeting() }}</h2>
         <p>{{ dashboardSubtitle() }}</p>
       </div>
-      <button class="refresh-button" type="button" (click)="loadDashboard()" [disabled]="loading()">
-        {{ loading() ? 'Atualizando...' : 'Atualizar' }}
-      </button>
+      <div class="refresh-actions">
+        <app-auto-refresh-control
+          storageKey="drflowhub.autoRefresh.dashboard"
+          [updatedAt]="atualizadoEm()"
+          [loading]="loading()"
+          (refresh)="loadDashboard()"
+        />
+        <button class="refresh-button" type="button" (click)="loadDashboard()" [disabled]="loading()">
+          {{ loading() ? 'Atualizando...' : 'Atualizar' }}
+        </button>
+      </div>
     </section>
 
     @if (isBirthdayToday()) {
@@ -72,7 +80,7 @@
       <article class="panel forecast-panel">
         <header>
           <div>
-            <p class="system-name">Forecast</p>
+            <p class="system-name">Clima</p>
             <h2>Previsão do tempo</h2>
             <span>{{ forecastLocation() }}</span>
           </div>
@@ -85,20 +93,22 @@
           <div class="forecast-list">
             @for (day of forecast(); track day.date) {
               <article class="forecast-day">
-                <div>
+                <div class="forecast-day-head">
                   <i class="weather-icon" [class]="day.iconTone" aria-hidden="true">{{ day.icon }}</i>
-                  <strong>{{ day.label }}</strong>
+                  <div class="forecast-day-title">
+                    <strong>{{ day.label }}</strong>
+                    <small>{{ day.summary }}</small>
+                  </div>
                 </div>
-                <span>{{ day.temperatureMin }}° / {{ day.temperatureMax }}°</span>
-                <p>{{ day.summary }}</p>
-                <small>{{ day.rainChance }}% chuva</small>
+                <span class="forecast-temperature">{{ day.temperatureMin }}° / {{ day.temperatureMax }}°</span>
+                <p>{{ day.rainChance }}% de chance de chuva</p>
               </article>
             }
           </div>
         } @else {
           <div class="empty-state">
-            <strong>{{ forecastLoading() ? 'Carregando previsao...' : 'Forecast indisponivel' }}</strong>
-            <p>{{ forecastError() || 'A previsao aparece aqui assim que os dados forem carregados.' }}</p>
+            <strong>{{ forecastLoading() ? 'Carregando previsão...' : 'Previsão indisponível' }}</strong>
+            <p>{{ forecastError() || 'A previsão aparece aqui assim que os dados forem carregados.' }}</p>
           </div>
         }
       </article>
@@ -180,7 +190,7 @@
         } @else {
           <div class="empty-state">
             <strong>Nenhum alerta crítico agora.</strong>
-            <p>As solicitações carregadas nao possuem pendências priorizadas para este perfil.</p>
+            <p>As solicitações carregadas Não possuem pendências priorizadas para este perfil.</p>
           </div>
         }
       </article>

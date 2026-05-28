@@ -59,7 +59,7 @@ export class LoginPage implements OnInit {
           this.setupMode.set(false);
         }
       },
-      error: () => this.toastr.error('Nao foi possivel verificar o primeiro acesso.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível verificar o primeiro acesso.', 'Erro'),
     });
   }
 
@@ -67,7 +67,7 @@ export class LoginPage implements OnInit {
     if (this.form.invalid || this.loading()) {
       this.form.markAllAsTouched();
       if (this.form.invalid) {
-        this.toastr.warning('Informe email e senha para entrar.', 'Atencao');
+        this.toastr.warning('Informe email e senha para entrar.', 'Atenção');
       }
       return;
     }
@@ -88,7 +88,7 @@ export class LoginPage implements OnInit {
     if (this.setupForm.invalid || this.creating()) {
       this.setupForm.markAllAsTouched();
       if (this.setupForm.invalid) {
-        this.toastr.warning('Preencha todos os dados obrigatorios do administrador.', 'Atencao');
+        this.toastr.warning('Preencha todos os dados obrigatórios do administrador.', 'Atenção');
       }
       return;
     }
@@ -108,13 +108,13 @@ export class LoginPage implements OnInit {
         this.auth.login(payload.email, payload.senha).subscribe({
           next: () => this.router.navigateByUrl(this.auth.landingRoute()),
           error: () => {
-            this.toastr.warning('Administrador criado, mas nao foi possivel entrar automaticamente.', 'Primeiro acesso');
+            this.toastr.warning('Administrador criado, mas não foi possível entrar automaticamente.', 'Primeiro acesso');
             this.creating.set(false);
           },
         });
       },
       error: () => {
-        this.toastr.error('Primeiro acesso indisponivel. Entre com um usuario existente.', 'Erro');
+        this.toastr.error('Primeiro acesso indisponível. Entre com um usuário existente.', 'Erro');
         this.creating.set(false);
       },
     });

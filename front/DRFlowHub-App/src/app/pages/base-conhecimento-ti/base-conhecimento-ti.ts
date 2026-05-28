@@ -80,7 +80,7 @@ export class BaseConhecimentoTIPage implements OnInit {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar a base de conhecimento.', 'TI');
+        this.toastr.error('Não foi possível carregar a base de conhecimento.', 'TI');
       },
     });
   }
@@ -120,7 +120,7 @@ export class BaseConhecimentoTIPage implements OnInit {
   submit(): void {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
-      this.toastr.warning('Preencha titulo e descricao.', 'Atencao');
+      this.toastr.warning('Preencha título e descrição.', 'Atenção');
       return;
     }
 
@@ -142,7 +142,7 @@ export class BaseConhecimentoTIPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel salvar o conhecimento.', 'Erro');
+        this.toastr.error('Não foi possível salvar o conhecimento.', 'Erro');
       },
     });
   }
@@ -164,14 +164,14 @@ export class BaseConhecimentoTIPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel remover o conhecimento.', 'Erro');
+        this.toastr.error('Não foi possível remover o conhecimento.', 'Erro');
       },
     });
   }
 
   downloadDocument(item = this.selected()): void {
     if (!item?.arquivoUrl) {
-      this.toastr.info('Este conhecimento nao possui documento.', 'Documento');
+      this.toastr.info('Este conhecimento não possui documento.', 'Documento');
       return;
     }
 
@@ -184,7 +184,7 @@ export class BaseConhecimentoTIPage implements OnInit {
         link.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.toastr.error('Nao foi possivel baixar o documento.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível baixar o documento.', 'Erro'),
     });
   }
 

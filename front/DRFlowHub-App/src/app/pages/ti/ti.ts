@@ -11,7 +11,7 @@ import { ActivatedRoute, Router } from '@angular/router';
 import type { HubConnection } from '@microsoft/signalr';
 import { AuthService } from '../../core/auth.service';
 import { ChamadosTIService } from '../../core/chamados-ti.service';
-import { ChamadoTI, ChamadoTIComunicacao, ChamadoTIPayload, Unidade, User } from '../../core/models';
+import { ChamadoTI, ChamadoTIComunicação, ChamadoTIPayload, Unidade, User } from '../../core/models';
 import { ThemeService } from '../../core/theme.service';
 import { ProfileFlowService } from '../../core/profile-flow.service';
 import { UnidadesService } from '../../core/unidades.service';
@@ -81,7 +81,7 @@ export class TiPage implements OnInit, OnDestroy {
   readonly pageSize = signal(10);
   readonly sortField = signal<TiSortField>('id');
   readonly sortDirection = signal<'asc' | 'desc'>('desc');
-  readonly comunicacoes = signal<ChamadoTIComunicacao[]>([]);
+  readonly comunicacoes = signal<ChamadoTIComunicação[]>([]);
   readonly movementAlerts = signal<TicketMovementAlert[]>([]);
   readonly loadingComunicacoes = signal(false);
   readonly sendingMessage = signal(false);
@@ -239,7 +239,7 @@ export class TiPage implements OnInit, OnDestroy {
           this.form.patchValue({ unidade: userUnidade });
         }
       },
-      error: () => this.toastr.error('Nao foi possivel carregar as unidades.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar as unidades.', 'Erro'),
     });
   }
 
@@ -260,7 +260,7 @@ export class TiPage implements OnInit, OnDestroy {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar os chamados de TI.', 'Erro');
+        this.toastr.error('Não foi possível carregar os chamados de TI.', 'Erro');
       },
     });
   }
@@ -268,7 +268,7 @@ export class TiPage implements OnInit, OnDestroy {
   loadResponsaveis(): void {
     this.auth.listAdministradores().subscribe({
       next: (users) => this.responsaveis.set(users),
-      error: () => this.toastr.error('Nao foi possivel carregar os responsaveis.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar os responsáveis.', 'Erro'),
     });
   }
 
@@ -332,7 +332,7 @@ export class TiPage implements OnInit, OnDestroy {
 
     const hidden = Math.max(this.concluidos() - 10, 0);
     return hidden > 0
-      ? `Mostrando os 10 concluidos mais recentes. Consulte por numero, titulo ou data para exibir os demais.`
+      ? `Mostrando os 10 concluídos mais recentes. Consulte por número, título ou data para exibir os demais.`
       : 'Mostrando todos os chamados concluidos.';
   }
 
@@ -347,7 +347,7 @@ export class TiPage implements OnInit, OnDestroy {
   openMovementAlert(alert: TicketMovementAlert): void {
     const item = this.chamados().find((chamado) => chamado.id === alert.ticketId);
     if (!item) {
-      this.toastr.info(`Chamado #${alert.ticketId} nao esta mais na lista atual.`, 'TI');
+      this.toastr.info(`Chamado #${alert.ticketId} não está mais na lista atual.`, 'TI');
       return;
     }
 
@@ -400,7 +400,7 @@ export class TiPage implements OnInit, OnDestroy {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       if (this.form.invalid) {
-        this.toastr.warning('Confira os campos obrigatorios antes de abrir o chamado.', 'Atencao');
+        this.toastr.warning('Confira os campos obrigatórios antes de abrir o chamado.', 'Atenção');
       }
       return;
     }
@@ -442,7 +442,7 @@ export class TiPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.saving.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel abrir o chamado.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível abrir o chamado.', error), 'Erro');
       },
     });
   }
@@ -526,7 +526,7 @@ export class TiPage implements OnInit, OnDestroy {
     if (!selected || this.adminForm.invalid || this.updating()) {
       this.adminForm.markAllAsTouched();
       if (this.adminForm.invalid) {
-        this.toastr.warning('Confira os campos obrigatorios antes de salvar.', 'Atencao');
+        this.toastr.warning('Confira os campos obrigatórios antes de salvar.', 'Atenção');
       }
       return;
     }
@@ -542,7 +542,7 @@ export class TiPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.updating.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel atualizar o chamado.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível atualizar o chamado.', error), 'Erro');
       },
     });
   }
@@ -566,7 +566,7 @@ export class TiPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.reopening.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel reabrir o chamado.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível reabrir o chamado.', error), 'Erro');
       },
     });
   }
@@ -577,13 +577,13 @@ export class TiPage implements OnInit, OnDestroy {
     if (!selected || this.messageForm.invalid || this.sendingMessage()) {
       this.messageForm.markAllAsTouched();
       if (this.messageForm.invalid) {
-        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atencao');
+        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atenção');
       }
       return;
     }
 
     if (!this.hasResponsible(selected)) {
-      this.toastr.info('Defina um responsavel pelo chamado antes de usar o chat.', 'Chat');
+      this.toastr.info('Defina um responsável pelo chamado antes de usar o chat.', 'Chat');
       return;
     }
 
@@ -603,7 +603,7 @@ export class TiPage implements OnInit, OnDestroy {
   }
 
   private sendMessageByHttp(selected: ChamadoTI, mensagem: string): void {
-    this.service.sendComunicacao(selected.id, mensagem).subscribe({
+    this.service.sendComunicação(selected.id, mensagem).subscribe({
       next: (message) => {
         this.addChatMessage(message);
         this.rememberTicketMovement({
@@ -612,11 +612,11 @@ export class TiPage implements OnInit, OnDestroy {
         });
         this.messageForm.reset({ mensagem: '' });
         this.sendingMessage.set(false);
-        this.toastr.success('Mensagem enviada.', 'Comunicacao');
+        this.toastr.success('Mensagem enviada.', 'Comunicação');
       },
       error: (error) => {
         this.sendingMessage.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel enviar a mensagem.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível enviar a mensagem.', error), 'Erro');
       },
     });
   }
@@ -626,7 +626,7 @@ export class TiPage implements OnInit, OnDestroy {
     if (!selected || this.closing() || this.closeForm.invalid) {
       this.closeForm.markAllAsTouched();
       if (this.closeForm.invalid) {
-        this.toastr.warning('Informe as observacoes de encerramento antes de concluir.', 'Atencao');
+        this.toastr.warning('Informe as observacoes de encerramento antes de concluir.', 'Atenção');
       }
       return;
     }
@@ -644,7 +644,7 @@ export class TiPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.closing.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel encerrar o chamado.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível encerrar o chamado.', error), 'Erro');
       },
     });
   }
@@ -658,7 +658,7 @@ export class TiPage implements OnInit, OnDestroy {
     if (!selected || !this.canEvaluate(selected) || this.satisfactionForm.invalid || this.rating()) {
       this.satisfactionForm.markAllAsTouched();
       if (this.satisfactionForm.invalid) {
-        this.toastr.warning('Escolha uma nota de 1 a 5 estrelas.', 'Atencao');
+        this.toastr.warning('Escolha uma nota de 1 a 5 estrelas.', 'Atenção');
       }
       return;
     }
@@ -674,11 +674,11 @@ export class TiPage implements OnInit, OnDestroy {
         this.rating.set(false);
         this.satisfactionModalRef?.hide();
         this.satisfactionModalRef = undefined;
-        this.toastr.success('Obrigado pela avaliacao do atendimento.', 'Satisfacao');
+        this.toastr.success('Obrigado pela avaliação do atendimento.', 'Satisfação');
       },
       error: (error) => {
         this.rating.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel registrar a avaliacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível registrar a avaliação.', error), 'Erro');
       },
     });
   }
@@ -704,7 +704,7 @@ export class TiPage implements OnInit, OnDestroy {
 
     const items = this.getSatisfactionReportItems();
     if (items.length === 0) {
-      this.toastr.info('Nenhuma avaliacao encontrada no periodo informado.', 'Relatorio');
+      this.toastr.info('Nenhuma avaliação encontrada no período informado.', 'Relatório');
       return;
     }
 
@@ -712,7 +712,7 @@ export class TiPage implements OnInit, OnDestroy {
     const reportWindow = window.open('', '_blank');
     if (!reportWindow) {
       this.generatingReport.set(false);
-      this.toastr.error('Permita pop-ups para gerar o PDF do relatorio.', 'Relatorio');
+      this.toastr.error('Permita pop-ups para gerar o PDF do relatório.', 'Relatório');
       return;
     }
 
@@ -727,7 +727,7 @@ export class TiPage implements OnInit, OnDestroy {
 
   previewAttachment(item = this.selected()): void {
     if (!item?.anexoImagemUrl) {
-      this.toastr.info('Este chamado nao possui anexo.', 'Anexo');
+      this.toastr.info('Este chamado não possui anexo.', 'Anexo');
       return;
     }
 
@@ -738,13 +738,13 @@ export class TiPage implements OnInit, OnDestroy {
         this.attachmentPreviewType.set(this.getAttachmentPreviewType(item.anexoImagemUrl, blob.type));
         this.attachmentPreviewUrl.set(this.sanitizer.bypassSecurityTrustResourceUrl(this.attachmentObjectUrl));
       },
-      error: () => this.toastr.error('Nao foi possivel carregar o anexo.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar o anexo.', 'Erro'),
     });
   }
 
   downloadAttachment(item = this.selected()): void {
     if (!item?.anexoImagemUrl) {
-      this.toastr.info('Este chamado nao possui anexo.', 'Anexo');
+      this.toastr.info('Este chamado não possui anexo.', 'Anexo');
       return;
     }
 
@@ -757,7 +757,7 @@ export class TiPage implements OnInit, OnDestroy {
         anchor.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.toastr.error('Nao foi possivel baixar o anexo.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível baixar o anexo.', 'Erro'),
     });
   }
 
@@ -771,23 +771,23 @@ export class TiPage implements OnInit, OnDestroy {
         const url = URL.createObjectURL(blob);
         const anchor = document.createElement('a');
         anchor.href = url;
-        anchor.download = `chamado-${item.id}-historico-chat.txt`;
+        anchor.download = `chamado-${item.id}-histórico-chat.txt`;
         anchor.click();
         URL.revokeObjectURL(url);
       },
-      error: () => this.toastr.error('Nao foi possivel baixar o historico do chat.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível baixar o histórico do chat.', 'Erro'),
     });
   }
 
   openRemoteAccess(item = this.selected()): void {
     if (!this.hasResponsible(item)) {
-      this.toastr.info('Defina um responsavel pelo chamado antes de iniciar o acesso remoto.', 'Acesso remoto');
+      this.toastr.info('Defina um responsável pelo chamado antes de iniciar o acesso remoto.', 'Acesso remoto');
       return;
     }
 
     const target = this.buildRealVncLink(item);
     if (!target) {
-      this.toastr.info('Este chamado ainda nao possui IP capturado para acesso remoto.', 'Acesso remoto');
+      this.toastr.info('Este chamado ainda não possui IP capturado para acesso remoto.', 'Acesso remoto');
       return;
     }
 
@@ -813,7 +813,7 @@ export class TiPage implements OnInit, OnDestroy {
       window.removeEventListener('blur', markLaunched);
       document.removeEventListener('visibilitychange', markHidden);
       if (!launched) {
-        this.toastr.warning('RealVNC Viewer nao parece estar instalado ou o protocolo de abertura nao esta configurado neste computador.', 'Acesso remoto');
+        this.toastr.warning('RealVNC Viewer não parece estar instalado ou o protocolo de abertura não está configurado neste computador.', 'Acesso remoto');
       }
     }, 1600);
   }
@@ -837,7 +837,7 @@ export class TiPage implements OnInit, OnDestroy {
     }
 
     if (!this.hasResponsible(selected)) {
-      this.toastr.info('Defina um responsavel pelo chamado antes de usar o chat.', 'Chat');
+      this.toastr.info('Defina um responsável pelo chamado antes de usar o chat.', 'Chat');
       return;
     }
 
@@ -861,12 +861,12 @@ export class TiPage implements OnInit, OnDestroy {
 
   equipmentSummary(item = this.selected()): string {
     if (!item) {
-      return 'Equipamento nao identificado';
+      return 'Equipamento não identificado';
     }
 
-    const name = item.equipamentoNome || 'Nome nao informado';
-    const ip = item.equipamentoIp || 'IP nao identificado';
-    const os = item.equipamentoSistemaOperacional || 'Sistema operacional nao identificado';
+    const name = item.equipamentoNome || 'Nome não informado';
+    const ip = item.equipamentoIp || 'IP não identificado';
+    const os = item.equipamentoSistemaOperacional || 'Sistema operacional não identificado';
     return `${name} - ${ip} - ${os}`;
   }
 
@@ -912,7 +912,7 @@ export class TiPage implements OnInit, OnDestroy {
       error: (error) => {
         this.comunicacoes.set([]);
         this.loadingComunicacoes.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar a comunicacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível carregar a comunicação.', error), 'Erro');
       },
     });
   }
@@ -953,7 +953,7 @@ export class TiPage implements OnInit, OnDestroy {
       .withAutomaticReconnect()
       .build();
 
-    connection.on('MensagemRecebida', (message: ChamadoTIComunicacao) => {
+    connection.on('MensagemRecebida', (message: ChamadoTIComunicação) => {
       if (this.selected()?.id !== message.chamadoTIId) {
         return;
       }
@@ -966,7 +966,7 @@ export class TiPage implements OnInit, OnDestroy {
       }
     });
 
-    connection.on('MensagemLida', (message: ChamadoTIComunicacao) => this.updateChatMessage(message));
+    connection.on('MensagemLida', (message: ChamadoTIComunicação) => this.updateChatMessage(message));
 
     connection.onreconnected(() => {
       if (this.chatChamadoId) {
@@ -1007,7 +1007,7 @@ export class TiPage implements OnInit, OnDestroy {
     }
   }
 
-  private addChatMessage(message: ChamadoTIComunicacao): void {
+  private addChatMessage(message: ChamadoTIComunicação): void {
     if (this.comunicacoes().some((item) => item.id === message.id)) {
       return;
     }
@@ -1017,21 +1017,21 @@ export class TiPage implements OnInit, OnDestroy {
     ));
   }
 
-  private updateChatMessage(message: ChamadoTIComunicacao): void {
+  private updateChatMessage(message: ChamadoTIComunicação): void {
     this.comunicacoes.set(this.comunicacoes().map((item) => item.id === message.id ? message : item));
   }
 
-  private markUnreadMessagesAsRead(messages: ChamadoTIComunicacao[]): void {
+  private markUnreadMessagesAsRead(messages: ChamadoTIComunicação[]): void {
     messages.forEach((message) => this.markMessageAsRead(message));
   }
 
-  private markMessageAsRead(message: ChamadoTIComunicacao): void {
+  private markMessageAsRead(message: ChamadoTIComunicação): void {
     const currentUserId = this.user()?.id;
     if (!currentUserId || message.autorUserId === currentUserId || message.dataLeitura) {
       return;
     }
 
-    this.service.markComunicacaoRead(message.chamadoTIId, message.id).subscribe({
+    this.service.markComunicaçãoRead(message.chamadoTIId, message.id).subscribe({
       next: (updated) => this.updateChatMessage(updated),
       error: () => undefined,
     });
@@ -1193,7 +1193,7 @@ export class TiPage implements OnInit, OnDestroy {
           <strong>${this.escapeHtml(item.titulo)}</strong>
           <small>${this.escapeHtml(item.solicitante)} - ${this.escapeHtml(item.unidade)}</small>
         </td>
-        <td>${this.escapeHtml(item.responsavel || 'Sem responsavel')}</td>
+        <td>${this.escapeHtml(item.responsavel || 'Sem responsável')}</td>
         <td class="center">${item.satisfacaoNota}</td>
         <td>${this.formatDateTime(item.dataAvaliacao)}</td>
         <td>${this.escapeHtml(item.satisfacaoComentario || '-')}</td>
@@ -1204,7 +1204,7 @@ export class TiPage implements OnInit, OnDestroy {
 <html lang="pt-BR">
 <head>
   <meta charset="utf-8" />
-  <title>Relatorio de satisfacao - Chamados de TI</title>
+  <title>Relatório de satisfação - Chamados de TI</title>
   <style>
     @page { size: A4; margin: 16mm; }
     * { box-sizing: border-box; }
@@ -1230,7 +1230,7 @@ export class TiPage implements OnInit, OnDestroy {
   <header>
     <div class="brand">
       <p>DR Flow Hub</p>
-      <h1>Relatorio de satisfacao dos chamados de TI</h1>
+      <h1>Relatório de satisfação dos chamados de TI</h1>
     </div>
     <div class="meta">
       <div>Periodo: ${period}</div>
@@ -1250,7 +1250,7 @@ export class TiPage implements OnInit, OnDestroy {
         <th>Atendimento</th>
         <th>Responsavel</th>
         <th>Nota</th>
-        <th>Avaliacao</th>
+        <th>Avaliação</th>
         <th>Comentario</th>
       </tr>
     </thead>
@@ -1309,7 +1309,7 @@ export class TiPage implements OnInit, OnDestroy {
   }
 
   private getBrowserComputerName(): string {
-    return 'Nao informado pelo navegador';
+    return 'Não informado pelo navegador';
   }
 
   private getOperatingSystem(): string {
@@ -1341,7 +1341,7 @@ export class TiPage implements OnInit, OnDestroy {
       return 'Linux';
     }
 
-    return platform || 'Nao identificado';
+    return platform || 'Não identificado';
   }
 
   private parseDateFilter(value: string, endOfDay: boolean): Date | null {
@@ -1355,7 +1355,7 @@ export class TiPage implements OnInit, OnDestroy {
 
   private formatReportDate(value: string): string {
     if (!value) {
-      return 'todos os periodos';
+      return 'todos os períodos';
     }
 
     return this.formatDateTime(`${value}T00:00:00`).slice(0, 10);

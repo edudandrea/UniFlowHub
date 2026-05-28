@@ -2,6 +2,7 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { Component, HostListener, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgxSpinnerService } from 'ngx-spinner';
+import { AutoRefreshControlComponent } from '../../core/auto-refresh-control.component';
 import { AuthService } from '../../core/auth.service';
 import { ProfileFlowService } from '../../core/profile-flow.service';
 import { ThemeService } from '../../core/theme.service';
@@ -30,7 +31,7 @@ interface VendaVeiculoCanal {
 
 @Component({
   selector: 'app-veiculos-bi',
-  imports: [DatePipe],
+  imports: [DatePipe, AutoRefreshControlComponent],
   templateUrl: './veiculos-bi.html',
   styleUrl: './veiculos-bi.scss',
 })

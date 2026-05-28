@@ -1,7 +1,7 @@
 import { Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, map } from 'rxjs';
-import { SolicitacaoPayload, SolicitacaoRH, SolicitacaoRHComunicacao } from './models';
+import { SolicitacaoPayload, SolicitacaoRH, SolicitacaoRHComunicação } from './models';
 
 const API_URL = '/api';
 
@@ -14,7 +14,7 @@ interface SaveResponse {
 interface CommunicationResponse {
   sucesso: boolean;
   mensagem: string;
-  comunicacao: SolicitacaoRHComunicacao;
+  comunicacao: SolicitacaoRHComunicação;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -64,11 +64,11 @@ export class SolicitacoesService {
       .pipe(map((response) => response.solicitacao));
   }
 
-  listComunicacoes(id: number): Observable<SolicitacaoRHComunicacao[]> {
-    return this.http.get<SolicitacaoRHComunicacao[]>(`${API_URL}/solicitacoesrh/${id}/comunicacoes`);
+  listComunicacoes(id: number): Observable<SolicitacaoRHComunicação[]> {
+    return this.http.get<SolicitacaoRHComunicação[]>(`${API_URL}/solicitacoesrh/${id}/comunicacoes`);
   }
 
-  sendComunicacao(id: number, mensagem: string): Observable<SolicitacaoRHComunicacao> {
+  sendComunicação(id: number, mensagem: string): Observable<SolicitacaoRHComunicação> {
     return this.http
       .post<CommunicationResponse>(`${API_URL}/solicitacoesrh/${id}/comunicacoes`, { mensagem })
       .pipe(map((response) => response.comunicacao));

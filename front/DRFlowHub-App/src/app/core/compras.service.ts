@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable } from '@angular/core';
 import { map, Observable } from 'rxjs';
-import { SolicitacaoCompra, SolicitacaoCompraComunicacao, SolicitacaoCompraPayload, SolicitacaoCompraUpdatePayload } from './models';
+import { SolicitacaoCompra, SolicitacaoCompraComunicação, SolicitacaoCompraPayload, SolicitacaoCompraUpdatePayload } from './models';
 
 const API_URL = '/api';
 
@@ -12,7 +12,7 @@ interface SaveResponse {
 interface CommunicationResponse {
   sucesso: boolean;
   mensagem: string;
-  comunicacao: SolicitacaoCompraComunicacao;
+  comunicacao: SolicitacaoCompraComunicação;
 }
 
 @Injectable({ providedIn: 'root' })
@@ -43,11 +43,11 @@ export class ComprasService {
       .pipe(map((response) => response.solicitacao));
   }
 
-  listComunicacoes(id: number): Observable<SolicitacaoCompraComunicacao[]> {
-    return this.http.get<SolicitacaoCompraComunicacao[]>(`${API_URL}/solicitacoescompra/${id}/comunicacoes`);
+  listComunicacoes(id: number): Observable<SolicitacaoCompraComunicação[]> {
+    return this.http.get<SolicitacaoCompraComunicação[]>(`${API_URL}/solicitacoescompra/${id}/comunicacoes`);
   }
 
-  sendComunicacao(id: number, mensagem: string): Observable<SolicitacaoCompraComunicacao> {
+  sendComunicação(id: number, mensagem: string): Observable<SolicitacaoCompraComunicação> {
     return this.http
       .post<CommunicationResponse>(`${API_URL}/solicitacoescompra/${id}/comunicacoes`, { mensagem })
       .pipe(map((response) => response.comunicacao));

@@ -3,11 +3,11 @@ import { HttpClient } from '@angular/common/http';
 import { Router } from '@angular/router';
 import type { HubConnection } from '@microsoft/signalr';
 import { AuthService } from './auth.service';
-import { ChamadoTIComunicacao } from './models';
+import { ChamadoTIComunicação } from './models';
 
 @Injectable({ providedIn: 'root' })
 export class ChatAlertService {
-  readonly message = signal<ChamadoTIComunicacao | null>(null);
+  readonly message = signal<ChamadoTIComunicação | null>(null);
   private connection: HubConnection | null = null;
 
   constructor(
@@ -27,7 +27,7 @@ export class ChatAlertService {
       .withAutomaticReconnect()
       .build();
 
-    connection.on('NovaMensagemChamado', (message: ChamadoTIComunicacao) => this.message.set(message));
+    connection.on('NovaMensagemChamado', (message: ChamadoTIComunicação) => this.message.set(message));
 
     try {
       await connection.start();

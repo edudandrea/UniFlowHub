@@ -3,8 +3,8 @@
     <button class="brand-heading" type="button" (click)="goHome()" aria-label="Ir para a tela inicial">
       <img src="/drsul-logo.svg" alt="Grupo DRSUL" />
       <div>
-        <p class="system-name">Veiculos</p>
-        <h1>B.I Venda de Veiculos</h1>
+        <p class="system-name">Veículos</p>
+        <h1>B.I Venda de Veículos</h1>
       </div>
     </button>
 
@@ -64,6 +64,12 @@
     <button class="secondary" type="button" (click)="load()" [disabled]="loading()">
       {{ loading() ? 'Atualizando...' : 'Atualizar' }}
     </button>
+    <app-auto-refresh-control
+      storageKey="drflowhub.autoRefresh.veiculos-bi"
+      [updatedAt]="atualizadoEm()"
+      [loading]="loading()"
+      (refresh)="load()"
+    />
   </section>
 
   <section class="metrics">

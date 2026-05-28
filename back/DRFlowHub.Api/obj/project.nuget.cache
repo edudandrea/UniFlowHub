@@ -1,8 +1,8 @@
 {
   "version": 2,
-  "dgSpecHash": "XaZkNg8VnrA=",
+  "dgSpecHash": "/eo4jokzkL0=",
   "success": true,
-  "projectFilePath": "D:\\Dev\\DRFlowHub\\back\\drflowhub.api\\DRFlowHub.csproj",
+  "projectFilePath": "D:\\Dev\\DRFlowHub\\back\\DRFlowHub.Api\\DRFlowHub.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\Eduardo\\.nuget\\packages\\humanizer.core\\2.14.1\\humanizer.core.2.14.1.nupkg.sha512",
     "C:\\Users\\Eduardo\\.nuget\\packages\\microsoft.aspnetcore.authentication.jwtbearer\\10.0.7\\microsoft.aspnetcore.authentication.jwtbearer.10.0.7.nupkg.sha512",

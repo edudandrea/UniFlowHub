@@ -81,7 +81,7 @@ export class App {
       route: '/rh',
       enabled: true,
       children: [
-        { label: 'Solicitacoes do RH', description: 'Atendimento e demandas', route: '/rh', userRoute: '/solicitacoes', enabled: true, access: 'rh', adminAccess: 'rh-admin' },
+        { label: 'Solicitações do RH', description: 'Atendimento e demandas', route: '/rh', userRoute: '/solicitacoes', enabled: true, access: 'rh', adminAccess: 'rh-admin' },
         { label: 'Controle Cartão Ponto', description: 'Espelho e ajustes', route: '/rh/cartao-ponto', enabled: true, access: 'cartao-ponto' },
       ],
     },
@@ -96,7 +96,7 @@ export class App {
         { label: 'Controle de equipamentos', description: 'Inventario e movimentacoes', route: '/ti/equipamentos', enabled: true, access: 'equipamentos-ti' },
       ],
     },
-    { label: 'Compras', description: 'Solicitacoes e aprovacao', route: '/compras', enabled: true, access: 'compras', adminAccess: 'compras-admin' },
+    { label: 'Compras', description: 'Solicitações e aprovação', route: '/compras', enabled: true, access: 'compras', adminAccess: 'compras-admin' },
     { label: 'Controladoria', description: 'Guias de ICMS', route: '/controladoria', enabled: true, access: 'controladoria', hiddenForRoles: ['Gerente Geral de Pecas', 'Gerente de Pecas', 'Vendedor de Pecas'] },
     {
       label: 'Veiculos',
@@ -107,6 +107,7 @@ export class App {
       children: [
         { label: 'Estoque', description: 'Consulta de chassi e reserva', route: '/estoque/veiculos', enabled: true, access: 'veiculos' },
         { label: 'BI Venda de Veiculos', description: 'Indicadores comerciais', route: '/veiculos/bi-vendas', enabled: true, access: 'veiculos-bi' },
+        { label: 'Repasse', description: 'Analise de estoque usado', route: '/veiculos/repasses', enabled: true, access: 'veiculos-repasses' },
       ],
     },
     { label: 'Vendas Pecas', description: 'B.I comercial de pecas', route: '/vendas-pecas', enabled: true, access: PECAS_BI_ACCESSES },
@@ -116,11 +117,11 @@ export class App {
     { label: 'Comercial', description: 'Demandas comerciais', route: '/hub', enabled: false },
     {
       label: 'Cadastros',
-      description: 'Usuarios, empresas e perfis',
+      description: 'Usuários, empresas e perfis',
       route: '/cadastros',
       enabled: true,
       children: [
-        { label: 'Usuarios', description: 'Administracao de acessos', route: '/usuarios', enabled: true, access: 'usuarios' },
+        { label: 'Usuários', description: 'Administração de acessos', route: '/usuarios', enabled: true, access: 'usuarios' },
         { label: 'Empresas e Revendas', description: 'Cadastro operacional', route: '/cadastros/empresas-revendas', enabled: true, access: 'empresas-revendas' },
         { label: 'Cadastro de perfil', description: 'Perfis e acessos', route: '/cadastros/perfis', enabled: true, access: 'perfis' },
       ],

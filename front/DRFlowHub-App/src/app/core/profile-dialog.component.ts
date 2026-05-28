@@ -133,7 +133,7 @@ export class ProfileDialogComponent {
   submitProfile(): void {
     if (this.profileForm.invalid || this.saving()) {
       this.profileForm.markAllAsTouched();
-      this.toastr.warning('Confira os campos obrigatorios.', 'Perfil');
+      this.toastr.warning('Confira os campos obrigatórios.', 'Perfil');
       return;
     }
 
@@ -148,7 +148,7 @@ export class ProfileDialogComponent {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel atualizar o perfil.', 'Erro');
+        this.toastr.error('Não foi possível atualizar o perfil.', 'Erro');
       },
     });
   }
@@ -175,7 +175,7 @@ export class ProfileDialogComponent {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel alterar a senha.', 'Erro');
+        this.toastr.error('Não foi possível alterar a senha.', 'Erro');
       },
     });
   }

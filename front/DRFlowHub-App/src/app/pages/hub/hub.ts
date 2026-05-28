@@ -5,6 +5,7 @@ import { catchError, forkJoin, of } from 'rxjs';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../core/auth.service';
+import { AutoRefreshControlComponent } from '../../core/auto-refresh-control.component';
 import { ChamadosTIService } from '../../core/chamados-ti.service';
 import { ComprasService } from '../../core/compras.service';
 import { ChamadoTI, SolicitacaoCompra, SolicitacaoRH, User } from '../../core/models';
@@ -12,7 +13,7 @@ import { ProfileFlowService } from '../../core/profile-flow.service';
 import { SolicitacoesService } from '../../core/solicitacoes.service';
 import { ThemeService } from '../../core/theme.service';
 
-type DashboardArea = 'admin' | 'rh' | 'ti' | 'compras' | 'controladoria' | 'financeiro' | 'departamento';
+type DashboardArea = 'admin' | 'rh' | 'ti' | 'compras' | 'controladoria' | 'financeiro' | 'padrao';
 const USEFUL_LINKS_KEY = 'drflowhub.usefulLinks';
 
 interface MetricCard {
@@ -70,7 +71,7 @@ interface ForecastDay {
 
 @Component({
   selector: 'app-hub',
-  imports: [],
+  imports: [AutoRefreshControlComponent],
   templateUrl: './hub.html',
   styleUrl: './hub.scss',
 })
@@ -89,6 +90,7 @@ export class HubPage implements OnInit {
   readonly user = computed(() => this.auth.user());
   readonly profileMenuOpen = signal(false);
   readonly loading = signal(false);
+  readonly atualizadoEm = signal<Date | null>(null);
   readonly rhItems = signal<SolicitacaoRH[]>([]);
   readonly tiItems = signal<ChamadoTI[]>([]);
   readonly comprasItems = signal<SolicitacaoCompra[]>([]);
@@ -118,7 +120,7 @@ export class HubPage implements OnInit {
   readonly newLinkDescription = signal('');
 
   readonly greeting = computed(() => {
-    const firstName = (this.user()?.nome || 'Usuario').trim().split(/\s+/)[0];
+    const firstName = (this.user()?.nome || 'Usuário').trim().split(/\s+/)[0];
     const hour = new Date().getHours();
     const period = hour < 12 ? 'Bom dia' : hour < 18 ? 'Boa tarde' : 'Boa noite';
     return `${period}, ${firstName}`;
@@ -133,11 +135,11 @@ export class HubPage implements OnInit {
       return 'admin';
     }
 
-    if (role === 'RH' || department.includes('rh') || department.includes('recursos humanos')) {
+    if (role === 'RH' || department === 'rh' || department.includes('recursos humanos')) {
       return 'rh';
     }
 
-    if (role === 'TI' || department.includes('ti') || department.includes('tecnologia')) {
+    if (role === 'TI' || this.isTiDepartment(department)) {
       return 'ti';
     }
 
@@ -153,7 +155,7 @@ export class HubPage implements OnInit {
       return 'financeiro';
     }
 
-    return 'departamento';
+    return 'padrao';
   });
 
   readonly dashboardTitle = computed(() => {
@@ -180,7 +182,11 @@ export class HubPage implements OnInit {
       return 'Dashboard da Controladoria';
     }
 
-    return `Dashboard de ${user?.departamento || 'departamento'}`;
+    if (area === 'financeiro') {
+      return 'Dashboard Financeiro';
+    }
+
+    return 'Dashboard Padrão';
   });
 
   readonly dashboardSubtitle = computed(() => {
@@ -189,8 +195,16 @@ export class HubPage implements OnInit {
       return 'Acompanhe os alertas dos setores ativos e entre nas administrações quando precisar agir.';
     }
 
-    return `${user?.nome || 'Usuario'}, estes são os alertas priorizados para seu perfil e setor.`;
+    if (this.currentArea() === 'padrao') {
+      return `${user?.nome || 'Usuário'}, acompanhe seus chamados, solicitações e compras em aberto.`;
+    }
+
+    return `${user?.nome || 'Usuário'}, estes são os alertas priorizados para seu perfil e setor.`;
   });
+
+  readonly dashboardScopeLabel = computed(() =>
+    this.currentArea() === 'padrao' ? 'Dashboard padrão' : (this.user()?.departamento || 'Setor'),
+  );
 
   readonly isBirthdayToday = computed(() => {
     const birthDate = this.user()?.dataNascimento;
@@ -198,8 +212,8 @@ export class HubPage implements OnInit {
   });
 
   readonly birthdayGreeting = computed(() => {
-    const firstName = (this.user()?.nome || 'voce').trim().split(/\s+/)[0];
-    return `Feliz aniversario, ${firstName}! Que seu dia seja leve, especial e cheio de boas notícias.`;
+    const firstName = (this.user()?.nome || 'você').trim().split(/\s+/)[0];
+    return `Feliz aniversário, ${firstName}! Que seu dia seja leve, especial e cheio de boas notícias.`;
   });
 
   readonly showBirthdays = computed(() => this.currentArea() === 'rh' && this.auth.hasAccess('rh-admin'));
@@ -233,9 +247,9 @@ export class HubPage implements OnInit {
     if (area === 'admin') {
       return [
         this.metric('Abertas agora', this.openRh().length + this.openTi().length + this.openCompras().length, 'RH, TI e Compras', 'attention'),
-        this.metric('Prioridade alta', this.highPriorityAlerts().length, 'Solicitações criticas ou altas', 'danger'),
+        this.metric('Prioridade alta', this.highPriorityAlerts().length, 'Solicitações críticas ou altas', 'danger'),
         this.metric('Reabertas', this.reopenedRh().length + this.reopenedTi().length, 'Itens que voltaram ao fluxo', 'danger'),
-        this.metric('Administracao', this.adminQueue().length, 'Pendencias para responsáveis', 'neutral'),
+        this.metric('Administração', this.adminQueue().length, 'Pendências para responsáveis', 'neutral'),
       ];
     }
 
@@ -245,7 +259,7 @@ export class HubPage implements OnInit {
         this.metric('Abertas', items.filter((item) => this.isOpenStatus(item.status)).length, 'Solicitações em atendimento', 'attention'),
         this.metric('Reabertas', items.filter((item) => this.isReopened(item.status)).length, 'Retornaram para análise', 'danger'),
         this.metric('Alta prioridade', items.filter((item) => this.isHighPriority(item.prioridade)).length, 'Demandas sensíveis', 'danger'),
-        this.metric('Sem responsavel', items.filter((item) => !item.responsavel?.trim()).length, 'Precisam de triagem', 'neutral'),
+        this.metric('Sem responsável', items.filter((item) => !item.responsavel?.trim()).length, 'Precisam de triagem', 'neutral'),
       ];
     }
 
@@ -255,7 +269,7 @@ export class HubPage implements OnInit {
         this.metric('Abertos', items.filter((item) => this.isOpenStatus(item.status)).length, 'Chamados ativos', 'attention'),
         this.metric('Reabertos', items.filter((item) => item.reaberto || this.isReopened(item.status)).length, 'Voltaram para suporte', 'danger'),
         this.metric('Alta prioridade', items.filter((item) => this.isOpenStatus(item.status) && this.isHighPriority(item.prioridade)).length, 'Incidentes relevantes abertos', 'danger'),
-        this.metric('Sem responsavel', items.filter((item) => !item.responsavel?.trim()).length, 'Aguardando atribuição', 'neutral'),
+        this.metric('Sem responsável', items.filter((item) => !item.responsavel?.trim()).length, 'Aguardando atribuição', 'neutral'),
         this.metric('Concluídos atendente', items.filter((item) => this.isCompletedTi(item) && this.isAssignedToCurrentUser(item)).length, 'Finalizados por você', 'success'),
       ];
     }
@@ -263,7 +277,7 @@ export class HubPage implements OnInit {
     if (area === 'compras') {
       const items = this.comprasScope();
       return [
-        this.metric('Aguardando diretoria', items.filter((item) => item.status === 'Aguardando Diretoria').length, 'Pendentes de aprovacao', 'attention'),
+        this.metric('Aguardando diretoria', items.filter((item) => item.status === 'Aguardando Diretoria').length, 'Pendentes de aprovação', 'attention'),
         this.metric('Em compras', items.filter((item) => item.status.includes('Compras') || item.status === 'Em compras').length, 'Com comprador ou fila ativa', 'neutral'),
         this.metric('Alta prioridade', items.filter((item) => this.isHighPriority(item.prioridade)).length, 'Compras urgentes', 'danger'),
         this.metric('Concluídas', items.filter((item) => item.status === 'Concluida').length, 'Finalizadas no fluxo', 'success'),
@@ -279,12 +293,7 @@ export class HubPage implements OnInit {
       ];
     }
 
-    return [
-      this.metric('Minhas solicitacoes RH', this.myRhItems().filter((item) => this.isOpenStatus(item.status)).length, 'Demandas abertas por voce', 'attention'),
-      this.metric('Meus chamados TI', this.myTiItems().filter((item) => this.isOpenStatus(item.status)).length, 'Chamados em aberto', 'attention'),
-      this.metric('Minhas compras', this.myCompraItems().filter((item) => !this.isFinalCompra(item)).length, 'Solicitações em andamento', 'neutral'),
-      this.metric('Avaliacoes pendentes', this.pendingEvaluations(), 'Atendimentos encerrados a avaliar', 'success'),
-    ];
+    return this.defaultMetrics();
   });
 
   readonly alerts = computed<AlertItem[]>(() => {
@@ -304,11 +313,7 @@ export class HubPage implements OnInit {
     } else if (area === 'compras') {
       alerts = this.comprasAlerts(this.comprasScope());
     } else {
-      alerts = [
-        ...this.rhAlerts(this.myRhItems()),
-        ...this.tiAlerts(this.myTiItems()),
-        ...this.comprasAlerts(this.myCompraItems()),
-      ];
+      alerts = this.defaultAlerts();
     }
 
     return alerts
@@ -324,7 +329,7 @@ export class HubPage implements OnInit {
         { label: 'Administrar TI', route: '/ti', description: 'Chamados, responsáveis e reaberturas.', enabled: true },
         { label: 'Administrar Compras', route: '/compras', description: 'Aprovações e etapa de compras.', enabled: true },
         { label: 'Controladoria', route: '/controladoria', description: 'Controle de guias de ICMS.', enabled: true },
-        { label: 'Usuarios', route: '/usuarios', description: 'Crie acessos e ajuste perfis.', enabled: this.auth.hasAnyRole(['Admin', 'TI']) },
+        { label: 'Usuários', route: '/usuarios', description: 'Crie acessos e ajuste perfis.', enabled: this.auth.hasAnyRole(['Admin', 'TI']) },
       ];
     }
 
@@ -353,13 +358,13 @@ export class HubPage implements OnInit {
     if (area === 'controladoria') {
       return [
         { label: 'Guias de ICMS', route: '/controladoria', description: 'Conferir pagamentos e pendencias no Oracle.', enabled: true },
-        { label: 'Compras', route: '/compras', description: 'Acompanhar solicitacoes que impactam pagamentos.', enabled: true },
+        { label: 'Compras', route: '/compras', description: 'Acompanhar solicitações que impactam pagamentos.', enabled: true },
       ];
     }
 
     return [
       { label: 'Solicitar RH', route: '/solicitacoes', description: 'Abrir uma demanda administrativa ou de pessoas.', enabled: true },
-      { label: 'Chamado TI', route: '/ti', description: 'Acionar suporte técnico.', enabled: true },
+      { label: 'Abrir chamado TI', route: '/ti', description: 'Acionar suporte técnico.', enabled: true },
       { label: 'Solicitar compra', route: '/compras', description: 'Enviar uma necessidade de compra.', enabled: true },
     ];
   });
@@ -388,20 +393,21 @@ export class HubPage implements OnInit {
         this.tiItems.set(ti);
         this.comprasItems.set(compras);
         this.users.set(users);
+        this.atualizadoEm.set(new Date());
         this.loading.set(false);
         void this.spinner.hide();
       },
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar os indicadores do dashboard.', 'Dashboard');
+        this.toastr.error('Não foi possível carregar os indicadores do dashboard.', 'Dashboard');
       },
     });
   }
 
   openAction(action: DashboardAction): void {
     if (!action.enabled) {
-      this.toastr.warning('Seu perfil nao tem acesso a esta area.', 'Acesso restrito');
+      this.toastr.warning('Seu perfil não tem acesso a esta área.', 'Acesso restrito');
       return;
     }
 
@@ -499,6 +505,38 @@ export class HubPage implements OnInit {
 
   private metric(label: string, value: number, detail: string, tone: MetricCard['tone']): MetricCard {
     return { label, value, detail, tone };
+  }
+
+  private defaultMetrics(): MetricCard[] {
+    const rh = this.myOpenRhItems();
+    const ti = this.myOpenTiItems();
+    const compras = this.myOpenCompraItems();
+
+    return [
+      this.metric('Meus chamados TI', ti.length, 'Chamados de TI abertos por você', 'attention'),
+      this.metric('Minhas solicitações RH', rh.length, 'Solicitações de RH abertas por você', 'attention'),
+      this.metric('Minhas compras', compras.length, 'Solicitações de compras abertas por você', 'neutral'),
+      this.metric('Avaliações pendentes', this.pendingEvaluations(), 'Atendimentos encerrados a avaliar', 'success'),
+    ];
+  }
+
+  private defaultAlerts(): AlertItem[] {
+    return [
+      ...this.tiAlerts(this.myOpenTiItems()),
+      ...this.rhAlerts(this.myOpenRhItems()),
+      ...this.comprasAlerts(this.myOpenCompraItems()),
+    ];
+  }
+
+  private isTiDepartment(department: string): boolean {
+    return department === 'ti'
+      || department === 't.i'
+      || department.startsWith('ti ')
+      || department.endsWith(' ti')
+      || department.includes(' tecnologia')
+      || department.includes('tecnologia ')
+      || department.includes('informatica')
+      || department.includes('suporte ti');
   }
 
   private loadUsefulLinks(): void {
@@ -604,7 +642,7 @@ export class HubPage implements OnInit {
     } catch {
       this.forecast.set([]);
       this.forecastLoading.set(false);
-      this.forecastError.set('Nao foi possivel carregar a previsao agora.');
+      this.forecastError.set('Não foi possível carregar a previsão agora.');
     }
   }
 
@@ -614,23 +652,23 @@ export class HubPage implements OnInit {
   }
 
   private weatherSummary(code: number): string {
-    if ([0].includes(code)) return 'Ceu limpo';
+    if ([0].includes(code)) return 'Céu limpo';
     if ([1, 2].includes(code)) return 'Parcialmente nublado';
     if ([3, 45, 48].includes(code)) return 'Nublado';
     if ([51, 53, 55, 56, 57].includes(code)) return 'Garoa';
     if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return 'Chuva';
     if ([95, 96, 99].includes(code)) return 'Temporal';
-    return 'Tempo instavel';
+    return 'Tempo instável';
   }
 
   private weatherIcon(code: number): string {
     if ([0].includes(code)) return '☀';
     if ([1, 2].includes(code)) return '◐';
     if ([3, 45, 48].includes(code)) return '☁';
-    if ([51, 53, 55, 56, 57].includes(code)) return '☂';
-    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return '☔';
+    if ([51, 53, 55, 56, 57].includes(code)) return '⌁';
+    if ([61, 63, 65, 66, 67, 80, 81, 82].includes(code)) return '☂';
     if ([95, 96, 99].includes(code)) return '⚡';
-    return '◌';
+    return '•';
   }
 
   private weatherIconTone(code: number): string {
@@ -703,6 +741,18 @@ export class HubPage implements OnInit {
   private myCompraItems(): SolicitacaoCompra[] {
     const id = this.user()?.id;
     return this.comprasItems().filter((item) => item.userid === id);
+  }
+
+  private myOpenRhItems(): SolicitacaoRH[] {
+    return this.myRhItems().filter((item) => this.isOpenStatus(item.status));
+  }
+
+  private myOpenTiItems(): ChamadoTI[] {
+    return this.myTiItems().filter((item) => this.isOpenStatus(item.status));
+  }
+
+  private myOpenCompraItems(): SolicitacaoCompra[] {
+    return this.myCompraItems().filter((item) => !this.isFinalCompra(item));
   }
 
   private pendingEvaluations(): number {

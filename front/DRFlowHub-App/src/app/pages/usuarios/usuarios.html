@@ -78,14 +78,14 @@
             <details class="tree-company" open>
               <summary>
                 <span>{{ empresa.label }}</span>
-                <small>{{ empresa.totalUsuarios }} usuarios, {{ empresa.totalAtivos }} ativos</small>
+                <small>{{ empresa.totalUsuarios }} usuários, {{ empresa.totalAtivos }} ativos</small>
               </summary>
               <div class="tree-revendas">
                 @for (revenda of empresa.revendas; track revenda.key) {
                   <details class="tree-revenda" open>
                     <summary>
                       <span>{{ revenda.label }}</span>
-                      <small>{{ revenda.users.length }} usuarios, {{ revenda.totalAtivos }} ativos</small>
+                      <small>{{ revenda.users.length }} usuários, {{ revenda.totalAtivos }} ativos</small>
                     </summary>
                     <div class="tree-users">
                       @for (item of revenda.users; track item.id) {
@@ -123,8 +123,8 @@
       <section class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-title" (click)="$event.stopPropagation()">
         <div class="modal-header">
           <div>
-            <p class="system-name">{{ modalMode() === 'create' ? 'Novo acesso' : 'Usuario #' + selected()?.id }}</p>
-            <h2 id="modal-title">{{ modalMode() === 'create' ? 'Criar usuario' : 'Editar usuario' }}</h2>
+            <p class="system-name">{{ modalMode() === 'create' ? 'Novo acesso' : 'Usuário #' + selected()?.id }}</p>
+            <h2 id="modal-title">{{ modalMode() === 'create' ? 'Criar Usuário' : 'Editar Usuário' }}</h2>
             <span>{{ modalMode() === 'create' ? 'Preencha os dados para liberar acesso.' : selected()?.email }}</span>
           </div>
           <button class="icon-button" type="button" aria-label="Fechar modal" (click)="closeModal()" [disabled]="saving()">x</button>
@@ -216,7 +216,7 @@
           <div class="modal-actions">
             <button class="secondary" type="button" (click)="closeModal()" [disabled]="saving()">Cancelar</button>
             <button class="primary" type="submit" [disabled]="saving()">
-              {{ saving() ? 'Salvando...' : (modalMode() === 'create' ? 'Criar usuario' : 'Salvar usuario') }}
+              {{ saving() ? 'Salvando...' : (modalMode() === 'create' ? 'Criar Usuário' : 'Salvar Usuário') }}
             </button>
           </div>
         </form>
@@ -248,7 +248,7 @@
               </select>
             </label>
             <label>
-              Numero da revenda
+              Número da revenda
               <input type="number" formControlName="numeroRevenda" min="1" />
             </label>
           </div>
@@ -289,7 +289,7 @@
 
         <form class="user-form" [formGroup]="empresaForm" (ngSubmit)="submitEmpresa()">
           <label>
-            Numero da empresa
+            Número da empresa
             <input type="number" formControlName="numero" min="1" />
           </label>
           <label>

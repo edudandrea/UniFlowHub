@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../core/auth.service';
+import { AutoRefreshControlComponent } from '../../core/auto-refresh-control.component';
 import { ControladoriaService, GuiaIcmsFilter } from '../../core/controladoria.service';
 import { Empresa, GuiaIcms, Unidade } from '../../core/models';
 import { ProfileFlowService } from '../../core/profile-flow.service';
@@ -22,7 +23,7 @@ const ESTADOS_BRASIL = [
 
 @Component({
   selector: 'app-controladoria',
-  imports: [CurrencyPipe, FormsModule],
+  imports: [CurrencyPipe, FormsModule, AutoRefreshControlComponent],
   templateUrl: './controladoria.component.html',
   styleUrl: './controladoria.component.css',
 })
@@ -43,6 +44,7 @@ export class ControladoriaComponent implements OnInit {
   readonly revendasCadastro = signal<Unidade[]>([]);
   readonly selected = signal<GuiaIcms | null>(null);
   readonly loading = signal(false);
+  readonly atualizadoEm = signal<Date | null>(null);
   readonly updatingId = signal('');
   readonly profileMenuOpen = signal(false);
   readonly activeFilter = signal<GuiaStatusFilter>('pendentes');
@@ -118,12 +120,12 @@ export class ControladoriaComponent implements OnInit {
   loadCadastros(): void {
     this.unidadesService.listEmpresas().subscribe({
       next: (empresas) => this.empresasCadastro.set(empresas),
-      error: () => this.toastr.error('Nao foi possivel carregar as empresas cadastradas.', 'Controladoria'),
+      error: () => this.toastr.error('Não foi possível carregar as empresas cadastradas.', 'Controladoria'),
     });
 
     this.unidadesService.list().subscribe({
       next: (revendas) => this.revendasCadastro.set(revendas),
-      error: () => this.toastr.error('Nao foi possivel carregar as revendas cadastradas.', 'Controladoria'),
+      error: () => this.toastr.error('Não foi possível carregar as revendas cadastradas.', 'Controladoria'),
     });
   }
 
@@ -135,13 +137,14 @@ export class ControladoriaComponent implements OnInit {
         this.guias.set(items);
         this.page.set(1);
         this.selected.set(this.pagedGuias()[0] ?? items[0] ?? null);
+        this.atualizadoEm.set(new Date());
         this.loading.set(false);
         void this.spinner.hide();
       },
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar as guias de ICMS. Confira seu perfil, a conexao Oracle e a query do servico.', 'Controladoria');
+        this.toastr.error('Não foi possível carregar as guias de ICMS. Confira seu perfil, a conexão Oracle e a query do serviço.', 'Controladoria');
       },
     });
   }
@@ -218,7 +221,7 @@ export class ControladoriaComponent implements OnInit {
       },
       error: (error) => {
         this.updatingId.set('');
-        this.toastr.error(this.getErrorMessage('Nao foi possivel atualizar a marcacao no PostgreSQL.', error), 'Controladoria');
+        this.toastr.error(this.getErrorMessage('Não foi possível atualizar a marcacao no PostgreSQL.', error), 'Controladoria');
       },
     });
   }
@@ -250,7 +253,7 @@ export class ControladoriaComponent implements OnInit {
       },
       error: (error) => {
         this.batchUpdating.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel efetuar a baixa em lote.', error), 'Controladoria');
+        this.toastr.error(this.getErrorMessage('Não foi possível efetuar a baixa em lote.', error), 'Controladoria');
       },
     });
   }

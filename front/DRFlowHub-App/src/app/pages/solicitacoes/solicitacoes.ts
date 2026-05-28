@@ -4,7 +4,7 @@ import { HttpErrorResponse } from '@angular/common/http';
 import { PLATFORM_ID } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { AuthService } from '../../core/auth.service';
-import { SolicitacaoPayload, SolicitacaoRH, SolicitacaoRHComunicacao, Unidade } from '../../core/models';
+import { SolicitacaoPayload, SolicitacaoRH, SolicitacaoRHComunicação, Unidade } from '../../core/models';
 import { SolicitacoesService } from '../../core/solicitacoes.service';
 import { ThemeService } from '../../core/theme.service';
 import { ProfileFlowService } from '../../core/profile-flow.service';
@@ -53,7 +53,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
   readonly editModalOpen = signal(false);
   readonly selected = signal<SolicitacaoRH | null>(null);
   readonly detailTab = signal<'detalhes' | 'comunicacao'>('detalhes');
-  readonly comunicacoes = signal<SolicitacaoRHComunicacao[]>([]);
+  readonly comunicacoes = signal<SolicitacaoRHComunicação[]>([]);
   readonly loadingComunicacoes = signal(false);
   readonly sendingMessage = signal(false);
   readonly selectedFileName = signal('');
@@ -185,7 +185,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
           this.form.patchValue({ unidade: userUnidade });
         }
       },
-      error: () => this.toastr.error('Nao foi possivel carregar as unidades.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar as unidades.', 'Erro'),
     });
   }
 
@@ -201,7 +201,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar suas solicitacoes.', 'Erro');
+        this.toastr.error('Não foi possível carregar suas solicitações.', 'Erro');
       },
     });
   }
@@ -256,7 +256,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
     if (!selected || this.editForm.invalid || this.updating()) {
       this.editForm.markAllAsTouched();
       if (this.editForm.invalid) {
-        this.toastr.warning('Confira os campos obrigatorios antes de salvar.', 'Atencao');
+        this.toastr.warning('Confira os campos obrigatórios antes de salvar.', 'Atenção');
       }
       return;
     }
@@ -271,7 +271,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
       },
       error: (error) => {
         this.updating.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel atualizar a solicitacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível atualizar a solicitação.', error), 'Erro');
       },
     });
   }
@@ -281,24 +281,24 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
     if (!selected || this.isFinalized(selected) || this.messageForm.invalid || this.sendingMessage()) {
       this.messageForm.markAllAsTouched();
       if (this.isFinalized(selected)) {
-        this.toastr.info('Solicitacoes encerradas ou canceladas nao permitem novas mensagens.', 'RH');
+        this.toastr.info('Solicitações encerradas ou canceladas não permitem novas mensagens.', 'RH');
       } else if (this.messageForm.invalid) {
-        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atencao');
+        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atenção');
       }
       return;
     }
 
     this.sendingMessage.set(true);
-    this.service.sendComunicacao(selected.id, this.messageForm.controls.mensagem.value).subscribe({
+    this.service.sendComunicação(selected.id, this.messageForm.controls.mensagem.value).subscribe({
       next: (message) => {
         this.comunicacoes.set([...this.comunicacoes(), message]);
         this.messageForm.reset({ mensagem: '' });
         this.sendingMessage.set(false);
-        this.toastr.success('Mensagem enviada.', 'Comunicacao');
+        this.toastr.success('Mensagem enviada.', 'Comunicação');
       },
       error: (error) => {
         this.sendingMessage.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel enviar a mensagem.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível enviar a mensagem.', error), 'Erro');
       },
     });
   }
@@ -313,7 +313,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
       error: (error) => {
         this.comunicacoes.set([]);
         this.loadingComunicacoes.set(false);
-        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar a comunicacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível carregar a comunicação.', error), 'Erro');
       },
     });
   }
@@ -356,7 +356,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
     if (this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       if (this.form.invalid) {
-        this.toastr.warning('Confira os campos obrigatorios antes de enviar.', 'Atencao');
+        this.toastr.warning('Confira os campos obrigatórios antes de enviar.', 'Atenção');
       }
       return;
     }
@@ -390,7 +390,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
         this.saving.set(false);
       },
       error: (error) => {
-        this.toastr.error(this.getErrorMessage('Nao foi possivel criar a solicitacao.', error), 'Erro');
+        this.toastr.error(this.getErrorMessage('Não foi possível criar a solicitação.', error), 'Erro');
         this.saving.set(false);
       },
     });
@@ -411,7 +411,7 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
 
     if (this.satisfactionForm.invalid) {
       this.satisfactionForm.markAllAsTouched();
-      this.toastr.warning('Escolha uma nota de 1 a 5 estrelas.', 'Atencao');
+      this.toastr.warning('Escolha uma nota de 1 a 5 estrelas.', 'Atenção');
       return;
     }
 
@@ -422,11 +422,11 @@ export class SolicitacoesPage implements OnInit, OnDestroy {
         this.solicitacoes.set(this.solicitacoes().map((solicitacao) => solicitacao.id === updated.id ? updated : solicitacao));
         this.satisfactionForm.reset({ solicitacaoId: 0, nota: 0, comentario: '' });
         this.rating.set(false);
-        this.toastr.success('Obrigado pela avaliacao do atendimento.', 'Satisfacao');
+        this.toastr.success('Obrigado pela avaliação do atendimento.', 'Satisfação');
       },
       error: () => {
         this.rating.set(false);
-        this.toastr.error('Nao foi possivel registrar a avaliacao.', 'Erro');
+        this.toastr.error('Não foi possível registrar a avaliação.', 'Erro');
       },
     });
   }

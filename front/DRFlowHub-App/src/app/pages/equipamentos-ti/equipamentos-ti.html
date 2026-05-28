@@ -46,7 +46,7 @@
         </div>
         <button class="primary" type="button" (click)="openNewMovement()">Nova movimentação</button>
       </div>
-      <input type="search" placeholder="Buscar por patrimonio, responsavel ou destino" [value]="search()" (input)="search.set($any($event.target).value)" />
+      <input type="search" placeholder="Buscar por patrimônio, responsável ou destino" [value]="search()" (input)="search.set($any($event.target).value)" />
       <div class="request-list">
         @if (loading()) {
           <p class="empty">Carregando...</p>
@@ -76,7 +76,7 @@
         <div class="section-heading modal-heading">
           <div>
             <h2 id="equipamentos-modal-title">{{ selected() ? 'Editar movimentacao' : 'Nova movimentacao' }}</h2>
-            <p>{{ selected() ? 'Atualize o status e o responsavel.' : 'Controle equipamentos entregues e recebidos pelo TI.' }}</p>
+            <p>{{ selected() ? 'Atualize o status e o responsável.' : 'Controle equipamentos entregues e recebidos pelo TI.' }}</p>
           </div>
           <button class="icon-button" type="button" aria-label="Fechar" (click)="closeModal()">x</button>
         </div>

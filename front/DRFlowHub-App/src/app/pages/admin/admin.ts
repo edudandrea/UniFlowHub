@@ -7,7 +7,7 @@ import { ToastrService } from 'ngx-toastr';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Router } from '@angular/router';
 import { AuthService } from '../../core/auth.service';
-import { SolicitacaoRH, SolicitacaoRHComunicacao, Unidade, User } from '../../core/models';
+import { SolicitacaoRH, SolicitacaoRHComunicação, Unidade, User } from '../../core/models';
 import { SolicitacoesService } from '../../core/solicitacoes.service';
 import { ThemeService } from '../../core/theme.service';
 import { ProfileFlowService } from '../../core/profile-flow.service';
@@ -50,7 +50,7 @@ export class AdminPage implements OnInit, OnDestroy {
   readonly reopening = signal(false);
   readonly modalOpen = signal(false);
   readonly detailTab = signal<'detalhes' | 'comunicacao'>('detalhes');
-  readonly comunicacoes = signal<SolicitacaoRHComunicacao[]>([]);
+  readonly comunicacoes = signal<SolicitacaoRHComunicação[]>([]);
   readonly loadingComunicacoes = signal(false);
   readonly sendingMessage = signal(false);
   readonly attachmentPreviewUrl = signal<SafeResourceUrl | null>(null);
@@ -157,7 +157,7 @@ export class AdminPage implements OnInit, OnDestroy {
   loadUnidades(): void {
     this.unidadesService.list().subscribe({
       next: (unidades) => this.unidades.set(unidades),
-      error: () => this.toastr.error('Nao foi possivel carregar as unidades.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar as unidades.', 'Erro'),
     });
   }
 
@@ -180,7 +180,7 @@ export class AdminPage implements OnInit, OnDestroy {
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar as solicitacoes.', 'Erro');
+        this.toastr.error('Não foi possível carregar as solicitações.', 'Erro');
       },
     });
   }
@@ -223,7 +223,7 @@ export class AdminPage implements OnInit, OnDestroy {
   previewAttachment(): void {
     const selected = this.selected();
     if (!selected?.anexossUrl) {
-      this.toastr.info('Esta solicitacao nao possui anexo.', 'Anexo');
+      this.toastr.info('Esta solicitação não possui anexo.', 'Anexo');
       return;
     }
 
@@ -241,14 +241,14 @@ export class AdminPage implements OnInit, OnDestroy {
           this.attachmentPreviewType.set('download');
         }
       },
-      error: () => this.toastr.error('Nao foi possivel carregar o anexo.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível carregar o anexo.', 'Erro'),
     });
   }
 
   downloadAttachment(): void {
     const selected = this.selected();
     if (!selected?.anexossUrl) {
-      this.toastr.info('Esta solicitacao nao possui anexo.', 'Anexo');
+      this.toastr.info('Esta solicitação não possui anexo.', 'Anexo');
       return;
     }
 
@@ -261,7 +261,7 @@ export class AdminPage implements OnInit, OnDestroy {
         link.click();
         URL.revokeObjectURL(objectUrl);
       },
-      error: () => this.toastr.error('Nao foi possivel baixar o anexo.', 'Erro'),
+      error: () => this.toastr.error('Não foi possível baixar o anexo.', 'Erro'),
     });
   }
 
@@ -284,7 +284,7 @@ export class AdminPage implements OnInit, OnDestroy {
     if (!selected || this.form.invalid || this.saving()) {
       this.form.markAllAsTouched();
       if (this.form.invalid) {
-        this.toastr.warning('Confira os campos obrigatorios antes de salvar.', 'Atencao');
+        this.toastr.warning('Confira os campos obrigatórios antes de salvar.', 'Atenção');
       }
       return;
     }
@@ -304,7 +304,7 @@ export class AdminPage implements OnInit, OnDestroy {
       error: () => {
         this.saving.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel salvar a atualizacao.', 'Erro');
+        this.toastr.error('Não foi possível salvar a atualização.', 'Erro');
       },
     });
   }
@@ -314,7 +314,7 @@ export class AdminPage implements OnInit, OnDestroy {
     if (!selected || this.closing() || this.closeForm.invalid) {
       this.closeForm.markAllAsTouched();
       if (this.closeForm.invalid) {
-        this.toastr.warning('Informe as observacoes de encerramento antes de concluir.', 'Atencao');
+        this.toastr.warning('Informe as observacoes de encerramento antes de concluir.', 'Atenção');
       }
       return;
     }
@@ -334,7 +334,7 @@ export class AdminPage implements OnInit, OnDestroy {
       error: () => {
         this.closing.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel encerrar a solicitacao.', 'Erro');
+        this.toastr.error('Não foi possível encerrar a solicitação.', 'Erro');
       },
     });
   }
@@ -360,7 +360,7 @@ export class AdminPage implements OnInit, OnDestroy {
       error: () => {
         this.reopening.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel reabrir a solicitacao.', 'Erro');
+        this.toastr.error('Não foi possível reabrir a solicitação.', 'Erro');
       },
     });
   }
@@ -370,24 +370,24 @@ export class AdminPage implements OnInit, OnDestroy {
     if (!selected || this.isFinalized(selected) || this.messageForm.invalid || this.sendingMessage()) {
       this.messageForm.markAllAsTouched();
       if (this.isFinalized(selected)) {
-        this.toastr.info('Solicitacoes encerradas ou canceladas nao permitem novas mensagens.', 'RH');
+        this.toastr.info('Solicitações encerradas ou canceladas não permitem novas mensagens.', 'RH');
       } else if (this.messageForm.invalid) {
-        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atencao');
+        this.toastr.warning('Escreva uma mensagem antes de enviar.', 'Atenção');
       }
       return;
     }
 
     this.sendingMessage.set(true);
-    this.service.sendComunicacao(selected.id, this.messageForm.controls.mensagem.value).subscribe({
+    this.service.sendComunicação(selected.id, this.messageForm.controls.mensagem.value).subscribe({
       next: (message) => {
         this.comunicacoes.set([...this.comunicacoes(), message]);
         this.messageForm.reset({ mensagem: '' });
         this.sendingMessage.set(false);
-        this.toastr.success('Mensagem enviada.', 'Comunicacao');
+        this.toastr.success('Mensagem enviada.', 'Comunicação');
       },
       error: () => {
         this.sendingMessage.set(false);
-        this.toastr.error('Nao foi possivel enviar a mensagem.', 'Erro');
+        this.toastr.error('Não foi possível enviar a mensagem.', 'Erro');
       },
     });
   }
@@ -460,7 +460,7 @@ export class AdminPage implements OnInit, OnDestroy {
       error: () => {
         this.comunicacoes.set([]);
         this.loadingComunicacoes.set(false);
-        this.toastr.error('Nao foi possivel carregar a comunicacao.', 'Erro');
+        this.toastr.error('Não foi possível carregar a comunicação.', 'Erro');
       },
     });
   }

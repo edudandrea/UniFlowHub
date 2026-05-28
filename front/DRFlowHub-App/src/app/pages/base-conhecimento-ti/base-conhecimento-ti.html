@@ -46,7 +46,7 @@
         </div>
         <button class="primary" type="button" (click)="openNew()">Novo conhecimento</button>
       </div>
-      <input type="search" placeholder="Buscar por titulo, categoria, tags ou manual" [value]="search()" (input)="search.set($any($event.target).value)" />
+      <input type="search" placeholder="Buscar por título, categoria, tags ou manual" [value]="search()" (input)="search.set($any($event.target).value)" />
 
       <div class="knowledge-list">
         @if (loading()) {
@@ -89,7 +89,7 @@
         </div>
 
         <div class="grid two">
-          <label>Titulo<input formControlName="titulo" /></label>
+          <label>Título<input formControlName="titulo" /></label>
           <label>Categoria<input formControlName="categoria" /></label>
         </div>
         <label>Descricao<textarea formControlName="descricao" rows="6"></textarea></label>

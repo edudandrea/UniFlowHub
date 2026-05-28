@@ -134,7 +134,7 @@ export class EmpresasRevendasPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel salvar a empresa.', 'Erro');
+        this.toastr.error('Não foi possível salvar a empresa.', 'Erro');
       },
     });
   }
@@ -182,7 +182,7 @@ export class EmpresasRevendasPage implements OnInit {
       },
       error: () => {
         this.saving.set(false);
-        this.toastr.error('Nao foi possivel salvar a revenda.', 'Erro');
+        this.toastr.error('Não foi possível salvar a revenda.', 'Erro');
       },
     });
   }

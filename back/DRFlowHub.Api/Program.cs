@@ -123,6 +123,7 @@ builder.Services.AddScoped<VeiculosService>();
 builder.Services.AddScoped<PecasBiService>();
 builder.Services.AddScoped<PerfisService>();
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddScoped<RepassesService>();
 
 var app = builder.Build();
 

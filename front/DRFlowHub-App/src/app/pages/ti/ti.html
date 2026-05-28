@@ -94,7 +94,7 @@
           type="search"
           [value]="filterTerm()"
           (input)="setFilter($any($event.target).value)"
-          placeholder="Numero, titulo, responsavel ou data"
+          placeholder="Número, título, responsável ou data"
         />
       </label>
 
@@ -111,15 +111,15 @@
           Ate
           <input type="date" [value]="dateTo()" (input)="dateTo.set($any($event.target).value)" />
         </label>
-        <button class="secondary" type="button" (click)="clearDateFilters()">Limpar periodo</button>
+        <button class="secondary" type="button" (click)="clearDateFilters()">Limpar período</button>
       </div>
 
       <div class="date-filters">
         <label>
           Ordenar
           <select [value]="sortField()" (change)="setSort($any($event.target).value)">
-            <option value="id">Numero</option>
-            <option value="titulo">Titulo</option>
+            <option value="id">Número</option>
+            <option value="titulo">Título</option>
             <option value="solicitante">Solicitante</option>
             <option value="unidade">Unidade</option>
             <option value="departamento">Departamento</option>
@@ -142,7 +142,7 @@
           type="button"
           (click)="focusPendingEvaluation(satisfactionModalTemplate)"
         >
-          Voce tem {{ avaliacoesPendentes() }} chamado(s) encerrado(s) para avaliar
+          Você tem {{ avaliacoesPendentes() }} chamado(s) encerrado(s) para avaliar
         </button>
       }
 
@@ -151,7 +151,7 @@
           <div>
             <strong>Relatório de satisfação</strong>
             <small
-              >{{ satisfactionReportCount() }} avaliações no periodo - media
+              >{{ satisfactionReportCount() }} avaliações no período - média
               {{ satisfactionReportAverage() }}</small
             >
           </div>
@@ -306,14 +306,14 @@
           <button class="secondary" type="button" (click)="previousPage()" [disabled]="page() <= 1">
             Anterior
           </button>
-          <span>Pagina {{ page() }} de {{ totalPages() }}</span>
+          <span>Página {{ page() }} de {{ totalPages() }}</span>
           <button
             class="secondary"
             type="button"
             (click)="nextPage()"
             [disabled]="page() >= totalPages()"
           >
-            Proxima
+            Próxima
           </button>
         </div>
       }
@@ -354,7 +354,7 @@
                 Prioridade
                 <select formControlName="prioridade">
                   <option>Baixa</option>
-                  <option>Media</option>
+                  <option>média</option>
                   <option>Alta</option>
                 </select>
               </label>
@@ -410,11 +410,11 @@
               <strong>Equipamento</strong>
               <span
                 >Nome:
-                {{ form.controls.equipamentoNome.value || 'Nao informado pelo navegador' }}</span
+                {{ form.controls.equipamentoNome.value || 'Não informado pelo navegador' }}</span
               >
               <span
                 >Sistema operacional:
-                {{ form.controls.equipamentoSistemaOperacional.value || 'Nao identificado' }}</span
+                {{ form.controls.equipamentoSistemaOperacional.value || 'Não identificado' }}</span
               >
               <small>O IP sera registrado automaticamente ao enviar o chamado.</small>
             </section>
@@ -440,16 +440,16 @@
             @if (selectedFilePreviewUrl()) {
               <section class="attachment-preview">
                 <div>
-                  <strong>Previsualizacao do anexo</strong>
+                  <strong>pré-visualização do anexo</strong>
                   <small>{{ selectedFileName() }}</small>
                 </div>
                 @if (selectedFilePreviewType() === 'image') {
-                  <img [src]="selectedFilePreviewUrl()" alt="Previsualizacao do anexo" />
+                  <img [src]="selectedFilePreviewUrl()" alt="pré-visualização do anexo" />
                 } @else if (selectedFilePreviewType() === 'pdf') {
-                  <iframe [src]="selectedFilePreviewUrl()" title="Previsualizacao do PDF"></iframe>
+                  <iframe [src]="selectedFilePreviewUrl()" title="pré-visualização do PDF"></iframe>
                 } @else {
                   <p class="empty">
-                    Documentos DOC e DOCX nao possuem previsualizacao no navegador, mas serao
+                    Documentos DOC e DOCX Não possuem pré-visualização no navegador, mas serao
                     enviados normalmente.
                   </p>
                 }
@@ -506,7 +506,7 @@
             <div
               class="rating-buttons rating-buttons-large"
               role="radiogroup"
-              aria-label="Nota de satisfacao"
+              aria-label="Nota de satisfação"
             >
               @for (star of [1, 2, 3, 4, 5]; track star) {
                 <button
@@ -521,7 +521,7 @@
                 </button>
               }
             </div>
-            <small>Escolha uma nota de 1 a 5 para concluir a avaliacao.</small>
+            <small>Escolha uma nota de 1 a 5 para concluir a avaliação.</small>
             <label>
               Comentario
               <textarea
@@ -531,7 +531,7 @@
               ></textarea>
             </label>
             <button class="primary" type="submit" [disabled]="rating()">
-              {{ rating() ? 'Enviando...' : 'Enviar avaliacao' }}
+              {{ rating() ? 'Enviando...' : 'Enviar avaliação' }}
             </button>
           </form>
         </div>
@@ -582,7 +582,7 @@
                 @if (canManage()) {
                   <form class="admin-form" [formGroup]="adminForm" (ngSubmit)="update()">
                     <label>
-                      Titulo
+                      Título
                       <input formControlName="titulo" />
                     </label>
 
@@ -603,7 +603,7 @@
                           <option>Aberto</option>
                           <option>Em analise</option>
                           <option>Em atendimento</option>
-                          <option>Aguardando usuario</option>
+                          <option>Aguardando Usuário</option>
                           <option>Concluído</option>
                           <option>Cancelado</option>
                         </select>
@@ -646,7 +646,7 @@
                         Prioridade
                         <select formControlName="prioridade">
                           <option>Baixa</option>
-                          <option>Media</option>
+                          <option>média</option>
                           <option>Alta</option>
                         </select>
                       </label>
@@ -669,16 +669,16 @@
                       <div class="ticket-dates equipment-meta">
                         <span
                           ><strong>Nome do computador:</strong>
-                          {{ selected()?.equipamentoNome || 'Nao informado pelo navegador' }}</span
+                          {{ selected()?.equipamentoNome || 'Não informado pelo navegador' }}</span
                         >
                         <span
                           ><strong>IP:</strong>
-                          {{ selected()?.equipamentoIp || 'Nao identificado' }}</span
+                          {{ selected()?.equipamentoIp || 'Não identificado' }}</span
                         >
                         <span
                           ><strong>Sistema operacional:</strong>
                           {{
-                            selected()?.equipamentoSistemaOperacional || 'Nao identificado'
+                            selected()?.equipamentoSistemaOperacional || 'Não identificado'
                           }}</span
                         >
                       </div>
@@ -690,7 +690,7 @@
                         <small>RealVNC Viewer usando o IP capturado no chamado</small>
                       </div>
                       <div class="remote-device-info">
-                        <span>{{ selected()?.equipamentoIp ? 'IP pronto para conexao RealVNC.' : 'IP nao capturado para este chamado.' }}</span>
+                        <span>{{ selected()?.equipamentoIp ? 'IP pronto para conexão RealVNC.' : 'IP Não capturado para este chamado.' }}</span>
                         @if (selected()?.equipamentoNome) {
                           <small>Equipamento: {{ selected()?.equipamentoNome }}</small>
                         }
@@ -778,7 +778,7 @@
                         <p class="stars readonly-stars">
                           @for (star of [1, 2, 3, 4, 5]; track star) {
                             <span [class.filled]="star <= (selected()?.satisfacaoNota ?? 0)"
-                              >★</span
+                              >â˜…</span
                             >
                           }
                         </p>
@@ -807,7 +807,7 @@
                           ></iframe>
                         } @else {
                           <p class="empty">
-                            Este documento nao possui previsualizacao no navegador. Use a opcao
+                            Este documento Não possui pré-visualização no navegador. Use a opção
                             baixar anexo.
                           </p>
                         }
@@ -858,7 +858,7 @@
                     <strong>#{{ selected()?.id }} - {{ selected()?.titulo }}</strong>
                     <span>Status: {{ selected()?.status }}</span>
                     <span>Prioridade: {{ selected()?.prioridade }}</span>
-                    <span>Responsável: {{ selected()?.responsavel || 'Sem responsavel' }}</span>
+                    <span>Responsável: {{ selected()?.responsavel || 'Sem responsável' }}</span>
                     <span>Criado em {{ selected()?.dataAbertura | date: 'dd/MM/yyyy HH:mm' }}</span>
                     @if (selected()?.dataPrimeiroEncerramento) {
                       <span
@@ -910,7 +910,7 @@
                           ></iframe>
                         } @else {
                           <p class="empty">
-                            Este documento nao possui pre-visualizacao no navegador. Use a opcao
+                            Este documento Não possui pre-visualizacao no navegador. Use a opção
                             baixar anexo.
                           </p>
                         }
@@ -926,7 +926,7 @@
                         <div
                           class="rating-buttons"
                           role="radiogroup"
-                          aria-label="Nota de satisfacao"
+                          aria-label="Nota de satisfação"
                         >
                           @for (star of [1, 2, 3, 4, 5]; track star) {
                             <button
@@ -937,7 +937,7 @@
                               "
                               (click)="setRating(star)"
                             >
-                              ★
+                              â˜…
                             </button>
                           }
                         </div>
@@ -951,7 +951,7 @@
                           ></textarea>
                         </label>
                         <button class="primary" type="submit" [disabled]="rating()">
-                          {{ rating() ? 'Enviando...' : 'Enviar avaliacao' }}
+                          {{ rating() ? 'Enviando...' : 'Enviar avaliação' }}
                         </button>
                       </form>
                     }
@@ -1014,7 +1014,7 @@
                     </p>
                   } @else if (!hasResponsible()) {
                     <p class="notice">
-                      Defina um responsavel pelo chamado para liberar o chat.
+                      Defina um responsável pelo chamado para liberar o chat.
                     </p>
                   } @else {
                     <form class="message-form" [formGroup]="messageForm" (ngSubmit)="sendMessage()">
@@ -1023,7 +1023,7 @@
                         <textarea
                           formControlName="mensagem"
                           rows="4"
-                          placeholder="Mensagem para o usuario"
+                          placeholder="Mensagem para o Usuário"
                           (keydown.enter)="sendMessage()"
                         ></textarea>
                       </label>

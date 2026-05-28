@@ -69,8 +69,8 @@
             <input type="date" [value]="dateTo()" (input)="dateTo.set($any($event.target).value)" />
           </label>
           <select [value]="sortField()" (change)="setSort($any($event.target).value)">
-            <option value="id">Numero</option>
-            <option value="titulo">Titulo</option>
+            <option value="id">Número</option>
+            <option value="titulo">Título</option>
             <option value="solicitante">Solicitante</option>
             <option value="unidade">Unidade</option>
             <option value="departamento">Departamento</option>
@@ -87,7 +87,7 @@
         <table>
           <thead>
             <tr>
-              <th>Titulo</th>
+              <th>Título</th>
               <th>Solicitante</th>
               <th>Unidade</th>
               <th>Departamento</th>
@@ -124,8 +124,8 @@
       @if (filtered().length > pageSize()) {
         <div class="filters">
           <button class="secondary" type="button" (click)="previousPage()" [disabled]="page() <= 1">Anterior</button>
-          <span>Pagina {{ page() }} de {{ totalPages() }}</span>
-          <button class="secondary" type="button" (click)="nextPage()" [disabled]="page() >= totalPages()">Proxima</button>
+          <span>Página {{ page() }} de {{ totalPages() }}</span>
+          <button class="secondary" type="button" (click)="nextPage()" [disabled]="page() >= totalPages()">Próxima</button>
         </div>
       }
     </div>
@@ -172,7 +172,7 @@
         </div>
 
         <form class="detail-panel modal-form" [formGroup]="form" (ngSubmit)="update()">
-          <div class="detail-tabs" role="tablist" aria-label="Detalhes da solicitacao">
+          <div class="detail-tabs" role="tablist" aria-label="Detalhes da solicitação">
             <button type="button" [class.active]="detailTab() === 'detalhes'" (click)="detailTab.set('detalhes')">Detalhes</button>
             <button type="button" [class.active]="detailTab() === 'comunicacao'" (click)="detailTab.set('comunicacao')">Comunicação</button>
           </div>
@@ -180,7 +180,7 @@
           @if (selected()) {
             @if (detailTab() === 'detalhes') {
             <label>
-              Titulo
+              Título
               <input formControlName="titulo" />
             </label>
 
@@ -233,7 +233,7 @@
                 Prioridade
                 <select formControlName="prioridade">
                   <option>Baixa</option>
-                  <option>Media</option>
+                  <option>média</option>
                   <option>Alta</option>
                   <option>Critica</option>
                 </select>
@@ -279,11 +279,11 @@
                 </div>
 
                 @if (attachmentPreviewType() === 'image') {
-                  <img [src]="attachmentPreviewUrl()" alt="Previsualizacao do anexo" />
+                  <img [src]="attachmentPreviewUrl()" alt="pré-visualização do anexo" />
                 } @else if (attachmentPreviewType() === 'pdf') {
-                  <iframe [src]="attachmentPreviewUrl()" title="Previsualizacao do PDF"></iframe>
+                  <iframe [src]="attachmentPreviewUrl()" title="pré-visualização do PDF"></iframe>
                 } @else {
-                  <p class="empty">Este tipo de documento nao possui pre-visualizacao no navegador. Use a opcao baixar.</p>
+                  <p class="empty">Este tipo de documento Não possui pre-visualizacao no navegador. Use a opção baixar.</p>
                 }
               </section>
             }
@@ -310,7 +310,7 @@
                 </div>
                 <p class="stars">
                   @for (star of [1, 2, 3, 4, 5]; track star) {
-                    <span [class.filled]="star <= (selected()?.satisfacaoNota ?? 0)">★</span>
+                    <span [class.filled]="star <= (selected()?.satisfacaoNota ?? 0)">â˜…</span>
                   }
                 </p>
                 @if (selected()?.satisfacaoComentario) {
@@ -322,10 +322,10 @@
             <div class="modal-actions">
               <button class="secondary" type="button" (click)="closeModal()" [disabled]="saving() || closing() || reopening()">Cancelar</button>
               <button class="secondary" type="button" [disabled]="reopening() || !selected()?.dataEncerramento" (click)="reopenSolicitacao()">
-                {{ reopening() ? 'Reabrindo...' : 'Reabrir solicitacao' }}
+                {{ reopening() ? 'Reabrindo...' : 'Reabrir solicitação' }}
               </button>
               <button class="primary" type="submit" [disabled]="saving() || !!selected()?.dataEncerramento">
-                {{ saving() ? 'Salvando...' : 'Salvar atualizacao' }}
+                {{ saving() ? 'Salvando...' : 'Salvar atualização' }}
               </button>
             </div>
 
@@ -336,7 +336,7 @@
                   <textarea formControlName="observacoesEncerramento" rows="3" placeholder="Descreva a conclusao do atendimento antes de encerrar"></textarea>
                 </label>
                 <button class="danger" type="button" [disabled]="closing()" (click)="closeSolicitacao()">
-                  {{ closing() ? 'Encerrando...' : 'Encerrar solicitacao' }}
+                  {{ closing() ? 'Encerrando...' : 'Encerrar solicitação' }}
                 </button>
               </div>
             }
@@ -366,7 +366,7 @@
                   <div class="message-form" [formGroup]="messageForm">
                     <label>
                       Nova mensagem
-                      <textarea formControlName="mensagem" rows="4" placeholder="Escreva uma atualizacao para esta solicitacao"></textarea>
+                      <textarea formControlName="mensagem" rows="4" placeholder="Escreva uma atualização para esta solicitação"></textarea>
                     </label>
                     <button class="primary" type="button" [disabled]="sendingMessage()" (click)="sendMessage()">
                       {{ sendingMessage() ? 'Enviando...' : 'Enviar mensagem' }}

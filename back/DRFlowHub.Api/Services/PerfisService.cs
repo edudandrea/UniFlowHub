@@ -12,33 +12,34 @@ namespace DRFlowHub.Api.Services
 
         public static readonly List<AcessoSistemaDto> AcessosDisponiveis = new()
         {
-            new() { Chave = "dashboard-admin", Nome = "Dashboard do administrador", Grupo = "Dashboard" },
-            new() { Chave = "dashboard-rh", Nome = "Dashboard do RH", Grupo = "Dashboard" },
-            new() { Chave = "rh", Nome = "Solicitacoes do RH", Grupo = "Departamentos" },
+            new() { Chave = "dashboard-admin", Nome = "Dashboard administrador", Grupo = "Dashboard" },
+            new() { Chave = "dashboard-rh", Nome = "Dashboard RH", Grupo = "Dashboard" },
+            new() { Chave = "rh", Nome = "Solicitações do RH", Grupo = "Departamentos" },
             new() { Chave = "rh-admin", Nome = "Administrador do setor RH", Grupo = "Administradores de setor" },
-            new() { Chave = "cartao-ponto", Nome = "Controle cartao ponto", Grupo = "Departamentos" },
+            new() { Chave = "cartao-ponto", Nome = "Controle de cartão de ponto", Grupo = "Departamentos" },
             new() { Chave = "ti", Nome = "Chamados de TI", Grupo = "Departamentos" },
             new() { Chave = "ti-admin", Nome = "Administrador do setor TI", Grupo = "Administradores de setor" },
             new() { Chave = "base-conhecimento-ti", Nome = "Base de conhecimento TI", Grupo = "Departamentos" },
             new() { Chave = "equipamentos-ti", Nome = "Equipamentos de TI", Grupo = "Departamentos" },
             new() { Chave = "compras", Nome = "Compras", Grupo = "Departamentos" },
-            new() { Chave = "compras-admin", Nome = "Administrador do setor Compras", Grupo = "Administradores de setor" },
+            new() { Chave = "compras-admin", Nome = "Administrador do setor de Compras", Grupo = "Administradores de setor" },
             new() { Chave = "controladoria", Nome = "Controladoria", Grupo = "Departamentos" },
-            new() { Chave = "pecas-admin", Nome = "Administrador do setor de pecas", Grupo = "Administradores de setor" },
-            new() { Chave = "vendas-pecas", Nome = "BI de pecas Geral", Grupo = "BI" },
-            new() { Chave = "pecas-bi-renault", Nome = "BI de pecas Renault", Grupo = "BI" },
-            new() { Chave = "pecas-bi-nissan", Nome = "BI de pecas Nissan", Grupo = "BI" },
-            new() { Chave = "pecas-bi-gm", Nome = "BI de pecas GM", Grupo = "BI" },
-            new() { Chave = "pecas-bi-fiat", Nome = "BI de pecas Fiat", Grupo = "BI" },
-            new() { Chave = "pecas-bi-bajaj", Nome = "BI de pecas Bajaj", Grupo = "BI" },
-            new() { Chave = "pecas-bi-peugeot-citroen", Nome = "BI de pecas Peugeot/Citroen", Grupo = "BI" },
-            new() { Chave = "pecas-bi-mg", Nome = "BI de pecas MG", Grupo = "BI" },
-            new() { Chave = "pecas-bi-geely", Nome = "BI de pecas Geely", Grupo = "BI" },
-            new() { Chave = "veiculos", Nome = "Estoque de veiculos", Grupo = "Veiculos" },
-            new() { Chave = "veiculos-bi", Nome = "BI venda de veiculos", Grupo = "BI" },
-            new() { Chave = "usuarios", Nome = "Cadastro de usuarios", Grupo = "Cadastros" },
+            new() { Chave = "pecas-admin", Nome = "Administrador do setor de Peças", Grupo = "Administradores de setor" },
+            new() { Chave = "vendas-pecas", Nome = "BI de Peças - Geral", Grupo = "BI" },
+            new() { Chave = "pecas-bi-renault", Nome = "BI de Peças - Renault", Grupo = "BI" },
+            new() { Chave = "pecas-bi-nissan", Nome = "BI de Peças - Nissan", Grupo = "BI" },
+            new() { Chave = "pecas-bi-gm", Nome = "BI de Peças - GM", Grupo = "BI" },
+            new() { Chave = "pecas-bi-fiat", Nome = "BI de Peças - Fiat", Grupo = "BI" },
+            new() { Chave = "pecas-bi-bajaj", Nome = "BI de Peças - Bajaj", Grupo = "BI" },
+            new() { Chave = "pecas-bi-peugeot-citroen", Nome = "BI de Peças - Peugeot/Citroen", Grupo = "BI" },
+            new() { Chave = "pecas-bi-mg", Nome = "BI de Peças - MG", Grupo = "BI" },
+            new() { Chave = "pecas-bi-geely", Nome = "BI de Peças - Geely", Grupo = "BI" },
+            new() { Chave = "veiculos", Nome = "Estoque de veículos", Grupo = "Veículos" },
+            new() { Chave = "veiculos-repasses", Nome = "Repasse de veículos", Grupo = "Veículos" },
+            new() { Chave = "veiculos-bi", Nome = "BI de veículos", Grupo = "BI" },
+            new() { Chave = "usuarios", Nome = "Cadastro de usuários", Grupo = "Cadastros" },
             new() { Chave = "empresas-revendas", Nome = "Cadastro de empresas e revendas", Grupo = "Cadastros" },
-            new() { Chave = "perfis", Nome = "Cadastro de perfil", Grupo = "Cadastros" },
+            new() { Chave = "perfis", Nome = "Cadastro de perfis", Grupo = "Cadastros" },
         };
 
         private static readonly Dictionary<string, string[]> PerfisPadrao = new(StringComparer.OrdinalIgnoreCase)
@@ -62,6 +63,7 @@ namespace DRFlowHub.Api.Services
                 "pecas-bi-mg",
                 "pecas-bi-geely",
                 "veiculos",
+                "veiculos-repasses",
                 "veiculos-bi",
                 "usuarios",
                 "empresas-revendas",
@@ -87,7 +89,10 @@ namespace DRFlowHub.Api.Services
         public async Task<List<AcessoSistemaDto>> ListAcessosAsync()
         {
             await EnsureDefaultsAsync();
-            return AcessosDisponiveis;
+            return AcessosDisponiveis
+                .OrderBy(a => a.Grupo)
+                .ThenBy(a => a.Nome)
+                .ToList();
         }
 
         public async Task<List<PerfilSistemaDto>> ListAsync(string role)
@@ -114,7 +119,7 @@ namespace DRFlowHub.Api.Services
 
             var nome = dto.Nome.Trim();
             if (string.IsNullOrWhiteSpace(nome))
-                throw new InvalidOperationException("Nome do perfil e obrigatorio.");
+                throw new InvalidOperationException("Nome do perfil é obrigatório.");
 
             var validKeys = AcessosDisponiveis.Select(a => a.Chave).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var acessos = dto.Acessos.Where(validKeys.Contains).Distinct(StringComparer.OrdinalIgnoreCase).ToList();

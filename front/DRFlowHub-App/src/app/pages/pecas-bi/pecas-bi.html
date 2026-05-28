@@ -93,6 +93,12 @@
       <button class="secondary filter-action" type="button" (click)="load()" [disabled]="loading()">
         {{ loading() ? 'Atualizando...' : 'Atualizar' }}
       </button>
+      <app-auto-refresh-control
+        storageKey="drflowhub.autoRefresh.Peças-bi"
+        [updatedAt]="data()?.atualizadoEm ?? null"
+        [loading]="loading()"
+        (refresh)="load()"
+      />
     </div>
   </section>
 
@@ -101,14 +107,14 @@
       <div>
         <p class="system-name">Meta de vendas</p>
         @if (metaStatus() === 'success') {
-          <h2><span class="celebration-icons">🎉 🏆 ✨</span> Parabéns, meta conquistada!</h2>
+          <h2><span class="celebration-icons">ðŸŽ‰ ðŸ† âœ¨</span> Parabéns, meta conquistada!</h2>
         } @else {
           <h2>Acompanhamento da sua meta</h2>
         }
         <span>
           {{ formatMoney(minhaMeta()!.valorVendido) }} vendidos de {{ formatMoney(minhaMeta()!.valorMeta) }}
           @if (minhaMeta()!.dataInicio && minhaMeta()!.dataFim) {
-            no periodo de {{ minhaMeta()!.dataInicio | date: 'dd/MM/yyyy' }} a {{ minhaMeta()!.dataFim | date: 'dd/MM/yyyy' }}
+            no período de {{ minhaMeta()!.dataInicio | date: 'dd/MM/yyyy' }} a {{ minhaMeta()!.dataFim | date: 'dd/MM/yyyy' }}
           }
         </span>
       </div>
@@ -130,7 +136,7 @@
     <article>
       <span>Rentabilidade</span>
       <strong>{{ formatPercent(rentabilidadePercentual()) }}</strong>
-      <p>{{ formatMoney(rentabilidadeTotal()) }} no periodo</p>
+      <p>{{ formatMoney(rentabilidadeTotal()) }} no período</p>
     </article>
     <article>
       <span>Notas emitidas</span>
@@ -157,7 +163,7 @@
           <span>
             {{ formatMoney(minhaMeta()!.valorVendido) }} vendidos de {{ formatMoney(minhaMeta()!.valorMeta) }}
             @if (minhaMeta()!.dataInicio && minhaMeta()!.dataFim) {
-              no periodo de {{ minhaMeta()!.dataInicio | date: 'dd/MM/yyyy' }} a {{ minhaMeta()!.dataFim | date: 'dd/MM/yyyy' }}
+              no período de {{ minhaMeta()!.dataInicio | date: 'dd/MM/yyyy' }} a {{ minhaMeta()!.dataFim | date: 'dd/MM/yyyy' }}
             }
           </span>
           <p class="goal-message">{{ metaMessage() }}</p>
@@ -236,7 +242,7 @@
                   (keydown.enter)="openChannelReport(item.nome)"
                   tabindex="0"
                   role="button"
-                  [attr.aria-label]="'Gerar relatorio de ' + channelLabel(item.nome)"
+                  [attr.aria-label]="'Gerar Relatório de ' + channelLabel(item.nome)"
                 >
                   <path
                     class="donut-slice"
@@ -339,7 +345,7 @@
                 </div>
               </article>
             } @empty {
-              <p class="empty-ranking">Nenhum comprador encontrado no periodo.</p>
+              <p class="empty-ranking">Nenhum comprador encontrado no período.</p>
             }
           </div>
         </article>
@@ -363,7 +369,7 @@
                   </div>
                 </article>
               } @empty {
-                <p class="empty-ranking">Nenhuma seguradora encontrada no periodo.</p>
+                <p class="empty-ranking">Nenhuma seguradora encontrada no período.</p>
               }
             </div>
           </article>
@@ -375,7 +381,7 @@
       <header>
         <div>
           <p class="system-name">Produtos</p>
-          <h2>Top pecas por faturamento</h2>
+          <h2>Top Peças por faturamento</h2>
           <span>Ordenado por {{ pecaSortLabel() }}</span>
         </div>
         <label class="sort-field">
@@ -461,7 +467,7 @@
       <article class="report-modal" (click)="$event.stopPropagation()">
         <header>
           <div>
-            <p class="system-name">Relatorio do canal</p>
+            <p class="system-name">Relatório do canal</p>
             <h2>{{ channelLabel(channelReportName()) }}</h2>
           </div>
           <div class="report-actions">
@@ -472,7 +478,7 @@
           </div>
         </header>
         @if (channelReportLoading()) {
-          <p class="empty-ranking">Gerando relatorio...</p>
+          <p class="empty-ranking">Gerando Relatório...</p>
         } @else {
           <div class="table-scroll">
             <table>

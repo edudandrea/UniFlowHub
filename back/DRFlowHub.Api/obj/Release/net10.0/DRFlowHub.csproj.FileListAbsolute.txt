@@ -140,4 +140,3 @@ D:\Dev\DRFlowHub\back\DRFlowHub.Api\bin\Release\net10.0\runtimes\win\lib\net8.0\
 D:\Dev\DRFlowHub\back\DRFlowHub.Api\bin\Release\net10.0\runtimes\linux\lib\net8.0\System.DirectoryServices.Protocols.dll
 D:\Dev\DRFlowHub\back\DRFlowHub.Api\bin\Release\net10.0\runtimes\osx\lib\net8.0\System.DirectoryServices.Protocols.dll
 D:\Dev\DRFlowHub\back\DRFlowHub.Api\bin\Release\net10.0\runtimes\win\lib\net8.0\System.DirectoryServices.Protocols.dll
-D:\Dev\DRFlowHub\back\DRFlowHub.Api\bin\Release\net10.0\DRFlowHub.exe

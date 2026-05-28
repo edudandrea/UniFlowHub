@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 import { NgxSpinnerService } from 'ngx-spinner';
 import { ToastrService } from 'ngx-toastr';
 import { AuthService } from '../../core/auth.service';
+import { AutoRefreshControlComponent } from '../../core/auto-refresh-control.component';
 import { Empresa, Unidade, VeiculoEstoque } from '../../core/models';
 import { ProfileFlowService } from '../../core/profile-flow.service';
 import { ThemeService } from '../../core/theme.service';
@@ -15,7 +16,7 @@ type VeiculoSortField = 'codigoVeiculo' | 'modelo' | 'cor' | 'chassi' | 'revenda
 
 @Component({
   selector: 'app-veiculos',
-  imports: [FormsModule],
+  imports: [FormsModule, AutoRefreshControlComponent],
   templateUrl: './veiculos.component.html',
   styleUrls: ['./veiculos.component.css'],
 })
@@ -38,6 +39,7 @@ export class VeiculosComponent implements OnInit {
   readonly empresaNumero = signal<number | null>(null);
   readonly revendaNumero = signal<number | null>(null);
   readonly loading = signal(false);
+  readonly atualizadoEm = signal<Date | null>(null);
   readonly updatingChassi = signal('');
   readonly profileMenuOpen = signal(false);
   readonly busca = signal('');
@@ -79,14 +81,14 @@ export class VeiculosComponent implements OnInit {
           this.load();
         }
       },
-      error: () => this.toastr.error('Nao foi possivel carregar as empresas cadastradas.', 'Estoque'),
+      error: () => this.toastr.error('Não foi possível carregar as empresas cadastradas.', 'Estoque'),
     });
   }
 
   loadRevendas(): void {
     this.unidadesService.list().subscribe({
       next: (revendas) => this.revendas.set(revendas),
-      error: () => this.toastr.error('Nao foi possivel carregar as revendas cadastradas.', 'Estoque'),
+      error: () => this.toastr.error('Não foi possível carregar as revendas cadastradas.', 'Estoque'),
     });
   }
 
@@ -105,13 +107,14 @@ export class VeiculosComponent implements OnInit {
         this.items.set(items);
         this.page.set(1);
         this.selected.set(items[0] ?? null);
+        this.atualizadoEm.set(new Date());
         this.loading.set(false);
         void this.spinner.hide();
       },
       error: () => {
         this.loading.set(false);
         void this.spinner.hide();
-        this.toastr.error('Nao foi possivel carregar o estoque de veiculos.', 'Estoque');
+        this.toastr.error('Não foi possível carregar o estoque de veículos.', 'Estoque');
       },
     });
   }
@@ -162,11 +165,11 @@ export class VeiculosComponent implements OnInit {
         this.items.set(this.items().map((current) => current.chassi === item.chassi ? merged : current));
         this.selected.set(merged);
         this.updatingChassi.set('');
-        this.toastr.success(reservado ? 'Veiculo marcado como reservado.' : 'Veiculo liberado no estoque.', 'Estoque');
+        this.toastr.success(reservado ? 'Veículo marcado como reservado.' : 'Veículo liberado no estoque.', 'Estoque');
       },
       error: () => {
         this.updatingChassi.set('');
-        this.toastr.error('Nao foi possivel atualizar a reserva.', 'Estoque');
+        this.toastr.error('Não foi possível atualizar a reserva.', 'Estoque');
       },
     });
   }
