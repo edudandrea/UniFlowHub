@@ -30,6 +30,7 @@ export class PerfisPage implements OnInit {
   readonly profileMenuOpen = signal(false);
   readonly modalOpen = signal(false);
   readonly saving = signal(false);
+  readonly deleting = signal(false);
   readonly acessosPorGrupo = computed(() => {
     const groups = new Map<string, AcessoSistema[]>();
     for (const acesso of this.acessos()) {
@@ -172,7 +173,7 @@ export class PerfisPage implements OnInit {
   }
 
   closeModal(): void {
-    if (!this.saving()) {
+    if (!this.saving() && !this.deleting()) {
       this.modalOpen.set(false);
     }
   }
@@ -188,7 +189,8 @@ export class PerfisPage implements OnInit {
 
   save(): void {
     this.saving.set(true);
-    this.service.save({ nome: this.nome(), acessos: this.acessosSelecionados() }).subscribe({
+    const selected = this.selected();
+    this.service.save({ id: selected?.id, nome: this.nome(), acessos: this.acessosSelecionados() }).subscribe({
       next: () => {
         this.saving.set(false);
         this.toastr.success('Perfil salvo com sucesso.', 'Perfis');
@@ -198,9 +200,38 @@ export class PerfisPage implements OnInit {
         this.acessosSelecionados.set([]);
         this.load();
       },
-      error: () => {
+      error: (error) => {
         this.saving.set(false);
-        this.toastr.error('Não foi possível salvar o perfil.', 'Erro');
+        this.toastr.error(error?.error || 'Não foi possível salvar o perfil.', 'Erro');
+      },
+    });
+  }
+
+  deleteSelected(): void {
+    const selected = this.selected();
+    if (!selected || selected.padraoSistema || this.deleting()) {
+      return;
+    }
+
+    const confirmed = window.confirm(`Excluir o perfil "${selected.nome}"? Esta ação não pode ser desfeita.`);
+    if (!confirmed) {
+      return;
+    }
+
+    this.deleting.set(true);
+    this.service.delete(selected.id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.toastr.success('Perfil excluído com sucesso.', 'Perfis');
+        this.modalOpen.set(false);
+        this.selected.set(null);
+        this.nome.set('');
+        this.acessosSelecionados.set([]);
+        this.load();
+      },
+      error: (error) => {
+        this.deleting.set(false);
+        this.toastr.error(error?.error || 'Não foi possível excluir o perfil.', 'Erro');
       },
     });
   }

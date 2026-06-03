@@ -88,6 +88,13 @@
                       <small>{{ revenda.users.length }} usuários, {{ revenda.totalAtivos }} ativos</small>
                     </summary>
                     <div class="tree-users">
+                      <div class="users-table-head">
+                        <span>UsuÃ¡rio</span>
+                        <span>Perfil</span>
+                        <span>Departamento</span>
+                        <span>Status</span>
+                        <span>AÃ§Ã£o</span>
+                      </div>
                       @for (item of revenda.users; track item.id) {
                         <button
                           class="tree-user"
@@ -100,11 +107,13 @@
                             <strong>{{ item.nome }}</strong>
                             <small>{{ item.email }}</small>
                           </span>
-                          <span class="tree-user-meta">
-                            <span class="status">{{ item.role }}</span>
-                            <span class="status" [class.inactive-status]="!item.ativo">{{ item.ativo ? 'Ativo' : 'Inativo' }}</span>
-                            <small>{{ item.departamento }} / {{ item.cargo }}</small>
+                          <span class="status">{{ item.role }}</span>
+                          <span class="tree-user-office">
+                            <strong>{{ item.departamento }}</strong>
+                            <small>{{ item.cargo }}</small>
                           </span>
+                          <span class="status" [class.inactive-status]="!item.ativo">{{ item.ativo ? 'Ativo' : 'Inativo' }}</span>
+                          <span class="row-action">Editar</span>
                         </button>
                       }
                     </div>

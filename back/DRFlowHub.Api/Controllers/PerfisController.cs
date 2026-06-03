@@ -39,6 +39,18 @@ namespace DRFlowHub.Api.Controllers
             catch (UnauthorizedAccessException ex) { return StatusCode(StatusCodes.Status403Forbidden, ex.Message); }
         }
 
+        [HttpDelete("{id:int}")]
+        public async Task<IActionResult> Delete(int id)
+        {
+            try
+            {
+                await _service.DeleteAsync(GetRole(), id);
+                return NoContent();
+            }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(StatusCodes.Status403Forbidden, ex.Message); }
+        }
+
         private string GetRole() => User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
     }
 }

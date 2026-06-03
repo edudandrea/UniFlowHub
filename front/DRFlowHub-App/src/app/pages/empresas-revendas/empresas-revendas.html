@@ -45,20 +45,22 @@
         @for (node of empresaTree(); track node.empresa.id) {
           <section class="company-node" [class.active]="expandedEmpresaId() === node.empresa.id">
             <div class="company-row">
-              <button class="record-card" type="button" (click)="selectEmpresa(node.empresa)">
+              <button class="record-row" type="button" (click)="selectEmpresa(node.empresa)">
                 <span class="code">{{ node.empresa.numero }}</span>
                 <strong>{{ node.empresa.nome }}</strong>
                 <small>{{ node.revendas.length }} revenda(s) cadastrada(s)</small>
+                <span class="row-hint">{{ expandedEmpresaId() === node.empresa.id ? 'Recolher' : 'Ver revendas' }}</span>
               </button>
               <button class="secondary action-button" type="button" (click)="editEmpresa(node.empresa)">Editar</button>
             </div>
             @if (expandedEmpresaId() === node.empresa.id) {
               <div class="branch-list">
                 @for (revenda of node.revendas; track revenda.id) {
-                  <button class="branch-card" type="button" (click)="editRevenda(revenda)">
+                  <button class="branch-row" type="button" (click)="editRevenda(revenda)">
                     <span>{{ node.empresa.numero }}/{{ revenda.numeroRevenda }}</span>
                     <strong>{{ revenda.revenda }}</strong>
                     <small>{{ revenda.cnpj }}</small>
+                    <span class="row-hint">Editar</span>
                   </button>
                 } @empty {
                   <p class="empty">Nenhuma revenda cadastrada para esta empresa.</p>

@@ -18,6 +18,7 @@ export interface PerfilSistema {
 }
 
 export interface PerfilSistemaPayload {
+  id?: number;
   nome: string;
   acessos: string[];
 }
@@ -36,5 +37,9 @@ export class PerfisService {
 
   save(payload: PerfilSistemaPayload): Observable<PerfilSistema> {
     return this.http.post<PerfilSistema>(`${API_URL}/perfis`, payload);
+  }
+
+  delete(id: number): Observable<void> {
+    return this.http.delete<void>(`${API_URL}/perfis/${id}`);
   }
 }

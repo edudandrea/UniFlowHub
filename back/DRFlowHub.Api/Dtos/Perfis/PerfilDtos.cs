@@ -17,6 +17,7 @@ namespace DRFlowHub.Api.Dtos.Perfis
 
     public class PerfilSistemaSaveDto
     {
+        public int? Id { get; set; }
         public string Nome { get; set; } = string.Empty;
         public List<string> Acessos { get; set; } = new();
     }

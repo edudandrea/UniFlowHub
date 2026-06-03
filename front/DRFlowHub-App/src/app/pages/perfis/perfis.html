@@ -40,18 +40,33 @@
     <button type="button" (click)="novo()">Novo perfil</button>
   </section>
 
-  <section class="profile-grid">
-    @for (perfil of perfis(); track perfil.id) {
-      <button class="profile-card" type="button" (click)="select(perfil)">
-        <div class="profile-card-head">
-          <strong>{{ perfil.nome }}</strong>
-          <span class="profile-status">{{ perfil.padraoSistema ? 'Padrão do sistema' : 'Personalizado' }}</span>
-        </div>
-        <span class="profile-meta">{{ perfil.acessos.length }} permissões</span>
-      </button>
-    } @empty {
-      <p class="empty">Nenhum perfil cadastrado.</p>
-    }
+  <section class="profile-list-panel">
+    <div class="profile-table" role="table" aria-label="Perfis de acesso">
+      <div class="profile-table-head" role="row">
+        <span role="columnheader">Perfil</span>
+        <span role="columnheader">Permissões</span>
+        <span role="columnheader">Tipo</span>
+        <span role="columnheader">Ação</span>
+      </div>
+      @for (perfil of perfis(); track perfil.id) {
+        <button class="profile-row" type="button" (click)="select(perfil)" role="row">
+          <span class="profile-name" role="cell">
+            <span class="profile-avatar">{{ perfil.nome.slice(0, 1) }}</span>
+            <strong>{{ perfil.nome }}</strong>
+          </span>
+          <span class="profile-meta" role="cell">
+            <b>{{ perfil.acessos.length }}</b>
+            {{ perfil.acessos.length === 1 ? 'permissão' : 'permissões' }}
+          </span>
+          <span role="cell">
+            <span class="profile-status" [class.custom]="!perfil.padraoSistema">{{ perfil.padraoSistema ? 'Padrão' : 'Personalizado' }}</span>
+          </span>
+          <span class="profile-open" role="cell">Editar</span>
+        </button>
+      } @empty {
+        <p class="empty">Nenhum perfil cadastrado.</p>
+      }
+    </div>
   </section>
 
   @if (modalOpen()) {
@@ -68,7 +83,7 @@
 
         <label>
           Nome do perfil de acesso
-          <input [ngModel]="nome()" (ngModelChange)="nome.set($event)" name="nome" />
+          <input [ngModel]="nome()" (ngModelChange)="nome.set($event)" name="nome" [disabled]="selected()?.padraoSistema === true" />
         </label>
 
         <div class="access-layout">
@@ -103,8 +118,12 @@
         </div>
 
         <div class="modal-actions">
+          <button class="danger" type="button" (click)="deleteSelected()" [disabled]="deleting() || saving()" [hidden]="!selected() || selected()?.padraoSistema">
+            {{ deleting() ? 'Excluindo...' : 'Excluir perfil' }}
+          </button>
+          <span class="modal-action-spacer"></span>
           <button class="secondary" type="button" (click)="closeModal()">Cancelar</button>
-          <button type="submit" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar perfil' }}</button>
+          <button type="submit" [disabled]="saving() || deleting()">{{ saving() ? 'Salvando...' : 'Salvar perfil' }}</button>
         </div>
       </form>
     </section>

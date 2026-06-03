@@ -163,22 +163,58 @@ h1 {
 
 .tree-company,
 .tree-revenda {
-  border: 1px solid var(--color-border);
+  overflow: hidden;
+  border: 1px solid color-mix(in srgb, var(--color-border) 82%, transparent);
   border-radius: 8px;
-  background: var(--color-card-alt);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--color-surface) 96%, transparent), color-mix(in srgb, var(--color-card-alt) 82%, var(--color-surface))),
+    var(--color-card-alt);
+  box-shadow: 0 12px 28px rgb(2 6 23 / 8%);
+}
+
+.tree-company {
+  border-color: color-mix(in srgb, var(--color-brand-blue) 34%, var(--color-border));
+}
+
+.tree-revenda {
+  margin-inline: 18px 4px;
 }
 
 .tree-company > summary,
 .tree-revenda > summary {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 14px;
-  padding: 14px 16px;
+  padding: 15px 18px;
   color: var(--color-text);
   font-weight: 900;
   cursor: pointer;
   list-style: none;
+}
+
+.tree-company > summary {
+  min-height: 78px;
+  padding: 20px 22px;
+}
+
+.tree-revenda > summary {
+  min-height: 62px;
+  padding: 16px 18px;
+}
+
+.tree-company > summary::after,
+.tree-revenda > summary::after {
+  content: "";
+  position: absolute;
+  right: 18px;
+  bottom: 0;
+  left: 58px;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--color-brand-blue), var(--color-brand-green-strong), transparent);
+  opacity: 0.5;
 }
 
 .tree-company > summary::-webkit-details-marker,
@@ -190,14 +226,22 @@ h1 {
 .tree-revenda > summary::before {
   content: '+';
   display: grid;
-  flex: 0 0 24px;
-  width: 24px;
-  height: 24px;
+  flex: 0 0 30px;
+  width: 30px;
+  height: 30px;
   place-items: center;
-  border-radius: 6px;
-  background: var(--color-button-soft-bg);
-  color: var(--color-button-soft-text);
+  border: 1px solid color-mix(in srgb, var(--color-brand-blue) 28%, var(--color-border));
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--color-brand-blue) 10%, var(--color-surface));
+  color: var(--color-brand-blue);
   font-weight: 900;
+}
+
+.tree-company > summary::before {
+  flex-basis: 40px;
+  width: 40px;
+  height: 40px;
+  font-size: 18px;
 }
 
 .tree-company[open] > summary::before,
@@ -211,12 +255,35 @@ h1 {
   min-width: 0;
 }
 
+.tree-company > summary span {
+  color: var(--color-text);
+  font-size: clamp(22px, 2vw, 30px);
+  line-height: 1.05;
+}
+
+.tree-revenda > summary span {
+  font-size: 18px;
+  line-height: 1.15;
+}
+
 .tree-company > summary small,
 .tree-revenda > summary small {
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 800;
   white-space: nowrap;
+}
+
+.tree-company > summary small {
+  display: inline-flex;
+  align-items: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border: 1px solid color-mix(in srgb, var(--color-brand-blue) 28%, var(--color-border));
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-brand-blue) 10%, var(--color-surface));
+  color: var(--color-brand-blue);
+  font-size: 13px;
 }
 
 .tree-revendas,
@@ -227,33 +294,62 @@ h1 {
 }
 
 .tree-users {
-  padding-top: 0;
+  overflow: hidden;
+  gap: 0;
+  padding: 0 18px 18px;
+  border-radius: 8px;
+}
+
+.users-table-head,
+.tree-user {
+  display: grid;
+  grid-template-columns: minmax(260px, 1.3fr) minmax(130px, 0.6fr) minmax(190px, 0.8fr) minmax(96px, 0.35fr) 72px;
+  align-items: center;
+  gap: 14px;
+}
+
+.users-table-head {
+  min-height: 38px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  border-bottom: 0;
+  border-radius: 8px 8px 0 0;
+  background: color-mix(in srgb, var(--color-card-alt) 70%, var(--color-surface));
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 900;
+  text-transform: uppercase;
 }
 
 .tree-user {
-  display: grid;
-  grid-template-columns: minmax(220px, 1fr) minmax(260px, auto);
-  gap: 12px;
   width: 100%;
-  padding: 14px;
+  min-height: 58px;
+  padding: 10px 14px;
   border: 1px solid var(--color-border);
-  border-radius: 8px;
+  border-bottom: 0;
+  border-radius: 0;
   background: var(--color-surface);
   color: var(--color-text);
   text-align: left;
   cursor: pointer;
+  transition: background 160ms ease, box-shadow 160ms ease;
+}
+
+.tree-user:last-child {
+  border-bottom: 1px solid var(--color-border);
+  border-radius: 0 0 8px 8px;
 }
 
 .tree-user:hover,
 .tree-user.active {
-  border-color: transparent;
-  background: var(--color-brand-green-soft);
+  background: color-mix(in srgb, var(--color-brand-blue) 7%, var(--color-surface));
+  box-shadow: inset 3px 0 0 var(--color-brand-blue);
 }
 
 .tree-user-main,
-.tree-user-meta {
+.tree-user-office {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 10px;
   min-width: 0;
 }
@@ -263,9 +359,15 @@ h1 {
   flex-direction: column;
 }
 
+.tree-user-main strong {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
 .tree-user-main strong,
 .tree-user-main small,
-.tree-user-meta small {
+.tree-user-office strong,
+.tree-user-office small {
   overflow: hidden;
   max-width: 100%;
   text-overflow: ellipsis;
@@ -273,14 +375,28 @@ h1 {
 }
 
 .tree-user-main small,
-.tree-user-meta small {
+.tree-user-office small {
   color: var(--color-muted);
   font-size: 12px;
   font-weight: 800;
 }
 
-.tree-user-meta {
-  justify-content: flex-end;
+.tree-user-office {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.tree-user-office strong {
+  font-size: 13px;
+  line-height: 1.2;
+}
+
+.row-action {
+  color: var(--color-brand-blue);
+  font-size: 12px;
+  font-weight: 900;
+  text-align: right;
 }
 
 .grid {
@@ -451,7 +567,7 @@ textarea:focus {
   .tree-revenda > summary,
   .tree-user,
   .tree-user-main,
-  .tree-user-meta {
+  .tree-user-office {
     align-items: flex-start;
     grid-template-columns: 1fr;
   }
@@ -461,8 +577,11 @@ textarea:focus {
     white-space: normal;
   }
 
-  .tree-user-meta {
-    justify-content: flex-start;
-    flex-wrap: wrap;
+  .users-table-head {
+    display: none;
+  }
+
+  .tree-user {
+    gap: 8px;
   }
 }

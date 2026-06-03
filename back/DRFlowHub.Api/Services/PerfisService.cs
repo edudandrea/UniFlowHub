@@ -124,16 +124,38 @@ namespace DRFlowHub.Api.Services
             var validKeys = AcessosDisponiveis.Select(a => a.Chave).ToHashSet(StringComparer.OrdinalIgnoreCase);
             var acessos = dto.Acessos.Where(validKeys.Contains).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
 
-            var perfil = await _context.PerfilSistema.Include(p => p.Acessos).FirstOrDefaultAsync(p => p.Nome.ToLower() == nome.ToLower());
+            var perfilId = dto.Id.GetValueOrDefault();
+            var perfil = perfilId > 0
+                ? await _context.PerfilSistema.Include(p => p.Acessos).FirstOrDefaultAsync(p => p.Id == perfilId)
+                : await _context.PerfilSistema.Include(p => p.Acessos).FirstOrDefaultAsync(p => p.Nome.ToLower() == nome.ToLower());
             if (perfil is null)
             {
+                if (perfilId > 0)
+                    throw new InvalidOperationException("Perfil não encontrado.");
+
                 perfil = new PerfilSistema { Nome = nome, PadraoSistema = false };
                 _context.PerfilSistema.Add(perfil);
             }
             else
             {
+                var duplicateName = await _context.PerfilSistema
+                    .AnyAsync(p => p.Id != perfil.Id && p.Nome.ToLower() == nome.ToLower());
+                if (duplicateName)
+                    throw new InvalidOperationException("Já existe um perfil com este nome.");
+
+                if (perfil.PadraoSistema && !string.Equals(perfil.Nome, nome, StringComparison.OrdinalIgnoreCase))
+                    throw new InvalidOperationException("Perfis padrão do sistema não podem ser renomeados.");
+
+                var previousName = perfil.Nome;
                 perfil.Nome = nome;
                 _context.PerfilSistemaAcesso.RemoveRange(perfil.Acessos);
+
+                if (!perfil.PadraoSistema && !string.Equals(previousName, nome, StringComparison.OrdinalIgnoreCase))
+                {
+                    var users = await _context.User.Where(u => u.Role == previousName).ToListAsync();
+                    foreach (var user in users)
+                        user.Role = nome;
+                }
             }
 
             foreach (var acesso in acessos)
@@ -151,6 +173,26 @@ namespace DRFlowHub.Api.Services
                 .Where(p => p.Nome == normalized)
                 .SelectMany(p => p.Acessos.Select(a => a.Chave))
                 .ToListAsync();
+        }
+
+        public async Task DeleteAsync(string role, int id)
+        {
+            EnsureCanManage(role);
+            await EnsureDefaultsAsync();
+
+            var perfil = await _context.PerfilSistema.Include(p => p.Acessos).FirstOrDefaultAsync(p => p.Id == id);
+            if (perfil is null)
+                throw new InvalidOperationException("Perfil não encontrado.");
+
+            if (perfil.PadraoSistema)
+                throw new InvalidOperationException("Perfis padrão do sistema não podem ser excluídos.");
+
+            var inUse = await _context.User.AnyAsync(u => u.Role == perfil.Nome);
+            if (inUse)
+                throw new InvalidOperationException("Este perfil está vinculado a usuários e não pode ser excluído.");
+
+            _context.PerfilSistema.Remove(perfil);
+            await _context.SaveChangesAsync();
         }
 
         public async Task<bool> PerfilExistsAsync(string role)
