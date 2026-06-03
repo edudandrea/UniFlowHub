@@ -536,17 +536,17 @@ namespace DRFlowHub.Api.Services
             var revenda = NormalizeFilter(filter.Revenda);
             var canal = NormalizeFilter(filter.Canal);
 
-            if (RoleScope.IsGerentePecas(role))
+            if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
+            {
+                empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
+                revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
+            }
+            else if (RoleScope.IsGerentePecas(role))
             {
                 if (!accessScope.EmpresaNumero.HasValue || accessScope.EmpresaNumero.Value <= 0)
                     throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
 
                 empresa = accessScope.EmpresaNumero.Value.ToString();
-            }
-            else if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
-            {
-                empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
-                revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
             }
 
             await using var connection = new OracleConnection(_connectionString);
@@ -606,17 +606,17 @@ namespace DRFlowHub.Api.Services
             var revenda = NormalizeFilter(filter.Revenda);
             var canal = canalDetalhe.Trim().ToUpperInvariant();
 
-            if (RoleScope.IsGerentePecas(role))
+            if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
+            {
+                empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
+                revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
+            }
+            else if (RoleScope.IsGerentePecas(role))
             {
                 if (!accessScope.EmpresaNumero.HasValue || accessScope.EmpresaNumero.Value <= 0)
                     throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
 
                 empresa = accessScope.EmpresaNumero.Value.ToString();
-            }
-            else if (!accessScope.AcessoGeral && accessScope.EmpresasPermitidas is { Count: > 0 } empresasPermitidas)
-            {
-                empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
-                revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
             }
 
             await using var connection = new OracleConnection(_connectionString);

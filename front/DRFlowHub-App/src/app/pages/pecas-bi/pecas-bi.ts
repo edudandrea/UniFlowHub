@@ -118,9 +118,10 @@ export class PecasBiPage implements OnInit {
   });
   readonly canUseEmpresaRevendaFilters = computed(() => true);
   readonly isEmpresaFilterLocked = computed(() => this.isGerenteEmpresaPecas() || (this.empresasPermitidasPorPerfil()?.length === 1));
+  readonly gerenteEmpresaNumeroEfetiva = computed(() => this.empresasPermitidasPorPerfil()?.[0] ?? this.userEmpresaNumero());
   readonly empresasDisponiveis = computed(() => {
-    const empresaNumero = this.userEmpresaNumero();
     if (this.isGerenteEmpresaPecas()) {
+      const empresaNumero = this.gerenteEmpresaNumeroEfetiva();
       return this.empresas().filter((empresa) => empresa.numero === empresaNumero);
     }
 
@@ -132,7 +133,7 @@ export class PecasBiPage implements OnInit {
     return this.empresas();
   });
   readonly revendasDaEmpresa = computed(() => {
-    const empresa = this.isGerenteEmpresaPecas() ? this.userEmpresaNumero() : this.empresaNumero();
+    const empresa = this.isGerenteEmpresaPecas() ? this.gerenteEmpresaNumeroEfetiva() : this.empresaNumero();
     const empresasPermitidas = this.empresasPermitidasPorPerfil();
     const revendasPermitidas = this.revendasPermitidasServidor();
     return this.revendas()
@@ -636,7 +637,7 @@ export class PecasBiPage implements OnInit {
   setEmpresa(value: string | number | null): void {
     if (!this.canUseEmpresaRevendaFilters() || this.isEmpresaFilterLocked()) {
       const empresaObrigatoria = this.isGerenteEmpresaPecas()
-        ? this.userEmpresaNumero()
+        ? this.gerenteEmpresaNumeroEfetiva()
         : this.empresasPermitidasPorPerfil()?.[0] ?? null;
       this.empresaNumero.set(empresaObrigatoria);
       this.revendasSelecionadas.set([]);
@@ -730,7 +731,7 @@ export class PecasBiPage implements OnInit {
     }
 
     if (this.isGerenteEmpresaPecas()) {
-      this.empresaNumero.set(this.userEmpresaNumero());
+      this.empresaNumero.set(this.gerenteEmpresaNumeroEfetiva());
       this.revendasSelecionadas.set([]);
       return;
     }
