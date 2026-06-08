@@ -1,0 +1,126 @@
+<main class="asset-shell">
+  <header class="topbar">
+    <button class="brand-heading" type="button" (click)="goHome()" aria-label="Ir para a tela inicial">
+      <img src="/uniflowhub-logo.png" alt="UniFlowHub" />
+      <div>
+        <p class="system-name">TI</p>
+        <h1>Controle de equipamentos</h1>
+      </div>
+    </button>
+    <div class="user-box profile-area">
+      <label class="theme-picker">
+        Tema
+        <select [value]="theme.current()" (change)="theme.setTheme($any($event.target).value)">
+          @for (option of theme.options; track option.value) {
+            <option [value]="option.value">{{ option.label }}</option>
+          }
+        </select>
+      </label>
+      <button class="profile-trigger" type="button" (click)="profileMenuOpen.set(!profileMenuOpen())">
+        <span>{{ user()?.nome }}</span>
+        <strong>{{ user()?.role }}</strong>
+      </button>
+      @if (profileMenuOpen()) {
+        <div class="profile-menu">
+          <button type="button" (click)="editProfile()">Editar perfil</button>
+          <button type="button" (click)="changePassword()">Trocar senha</button>
+          <button type="button" (click)="logout()">Sair</button>
+        </div>
+      }
+    </div>
+  </header>
+
+  <section class="metrics">
+    <article><span>Total</span><strong>{{ itens().length }}</strong></article>
+    <article><span>Em transito</span><strong>{{ emTransito() }}</strong></article>
+    <article><span>Recebidos</span><strong>{{ recebidos() }}</strong></article>
+    <article><span>Atrasados</span><strong>{{ atrasados() }}</strong></article>
+  </section>
+
+  <section class="asset-grid">
+    <aside class="list-panel">
+      <div class="section-heading">
+        <div>
+          <h2>Movimentações</h2>
+          <p>{{ filtered().length }} registro(s)</p>
+        </div>
+        <button class="primary" type="button" (click)="openNewMovement()">Nova movimentação</button>
+      </div>
+      <input type="search" placeholder="Buscar por patrimônio, responsável ou destino" [value]="search()" (input)="search.set($any($event.target).value)" />
+      <div class="request-list">
+        @if (loading()) {
+          <p class="empty">Carregando...</p>
+        } @else if (filtered().length === 0) {
+          <p class="empty">Nenhuma movimentação encontrada.</p>
+        } @else {
+          @for (item of filtered(); track item.id) {
+            <article class="request-card" (click)="select(item)">
+              <div>
+                <h3>{{ item.tipo }} - {{ item.patrimonio }}</h3>
+                <p>{{ item.modelo || item.serial || 'Sem modelo informado' }}</p>
+              </div>
+              <span class="status">{{ item.status }}</span>
+              <small>{{ item.origem }} -> {{ item.destino }}</small>
+              <small>Responsável: {{ item.responsavel }}</small>
+              <small>{{ item.dataMovimentacao | date: 'dd/MM/yyyy HH:mm' }}</small>
+            </article>
+          }
+        }
+      </div>
+    </aside>
+  </section>
+
+  @if (modalOpen()) {
+    <section class="modal-backdrop" role="presentation" (click)="$event.target === $event.currentTarget && closeModal()">
+      <form class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="equipamentos-modal-title" [formGroup]="form" (ngSubmit)="submit()" (click)="$event.stopPropagation()">
+        <div class="section-heading modal-heading">
+          <div>
+            <h2 id="equipamentos-modal-title">{{ selected() ? 'Editar movimentacao' : 'Nova movimentacao' }}</h2>
+            <p>{{ selected() ? 'Atualize o status e o responsável.' : 'Controle equipamentos entregues e recebidos pelo TI.' }}</p>
+          </div>
+          <button class="icon-button" type="button" aria-label="Fechar" (click)="closeModal()">x</button>
+        </div>
+        <div class="grid two">
+          <label>Tipo<input formControlName="tipo" /></label>
+          <label>Patrimônio<input formControlName="patrimonio" /></label>
+        </div>
+        <div class="grid two">
+          <label>Modelo<input formControlName="modelo" /></label>
+          <label>Serial<input formControlName="serial" /></label>
+        </div>
+        <div class="grid two">
+          <label>
+            Status
+            <select formControlName="status">
+              <option>Enviado</option>
+              <option>Em transito</option>
+              <option>Recebido</option>
+              <option>Devolução pendente</option>
+              <option>Manutenção</option>
+            </select>
+          </label>
+          <label>Previsão de retorno<input type="date" formControlName="dataPrevistaRetorno" /></label>
+        </div>
+        <div class="grid two">
+          <label>Origem<input formControlName="origem" /></label>
+          <label>Destino<input formControlName="destino" /></label>
+        </div>
+        <label>Responsável<input formControlName="responsavel" /></label>
+        <label>Observações<textarea formControlName="observacoes" rows="4"></textarea></label>
+        @if (!selected()) {
+          <label>
+            Documento
+            <input #documentoInput type="file" accept=".pdf,.doc,.docx,image/*" (change)="onFileSelected($event)" />
+            @if (selectedFileName()) {
+              <small class="file-name">{{ selectedFileName() }}</small>
+            }
+          </label>
+        }
+        @if (selected()?.documentoUrl) {
+          <button class="secondary" type="button" (click)="downloadDocument()">Baixar documento</button>
+        }
+        <button class="primary" type="submit" [disabled]="saving()">{{ saving() ? 'Salvando...' : 'Salvar controle' }}</button>
+      </form>
+    </section>
+  }
+</main>

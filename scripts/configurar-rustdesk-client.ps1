@@ -1,12 +1,12 @@
 #requires -version 5.1
 <#
-Configura o RustDesk Client Windows para usar o servidor self-hosted do DRFlowHub.
+Configura o RustDesk Client Windows para usar o servidor self-hosted do UniFlowHub.
 
 Execute em PowerShell como Administrador:
   powershell.exe -ExecutionPolicy Bypass -File .\configurar-rustdesk-client.ps1
 
-Para tambem registrar o equipamento no usuario do DRFlowHub:
-  powershell.exe -ExecutionPolicy Bypass -File .\configurar-rustdesk-client.ps1 -DRFlowHubApiUrl "http://SEU-SERVIDOR:5000" -Email "usuario@empresa.com" -Senha (Read-Host "Senha DRFlowHub" -AsSecureString)
+Para tambem registrar o equipamento no usuario do UniFlowHub:
+  powershell.exe -ExecutionPolicy Bypass -File .\configurar-rustdesk-client.ps1 -UniFlowHubApiUrl "http://SEU-SERVIDOR:5000" -Email "usuario@empresa.com" -Senha (Read-Host "Senha UniFlowHub" -AsSecureString)
 #>
 
 [CmdletBinding()]
@@ -17,7 +17,7 @@ param(
   [string]$RustDeskPath = '',
   [string]$PermanentPassword = '',
   [string]$ConfigString = '',
-  [string]$DRFlowHubApiUrl = '',
+  [string]$UniFlowHubApiUrl = '',
   [string]$Email = '',
   [securestring]$Senha,
   [switch]$SkipRegister
@@ -118,7 +118,7 @@ function Get-RustDeskId {
   return (($output | Out-String).Trim() -split '\s+' | Where-Object { $_ })[-1]
 }
 
-function Register-DRFlowHubRustDesk {
+function Register-UniFlowHubRustDesk {
   param(
     [string]$ApiUrl,
     [string]$LoginEmail,
@@ -128,7 +128,7 @@ function Register-DRFlowHubRustDesk {
   )
 
   if (!$ApiUrl -or !$LoginEmail -or !$LoginPassword) {
-    Write-Host 'Registro no DRFlowHub ignorado. Informe -DRFlowHubApiUrl, -Email e -Senha para registrar automaticamente.'
+    Write-Host 'Registro no UniFlowHub ignorado. Informe -UniFlowHubApiUrl, -Email e -Senha para registrar automaticamente.'
     return
   }
 
@@ -148,7 +148,7 @@ function Register-DRFlowHubRustDesk {
   }
 
   Invoke-RestMethod -Method Post -Uri "$api/api/users/me/rustdesk" -Headers $headers -ContentType 'application/json' -Body ($payload | ConvertTo-Json) | Out-Null
-  Write-Host "RustDesk registrado no DRFlowHub para $LoginEmail."
+  Write-Host "RustDesk registrado no UniFlowHub para $LoginEmail."
 }
 
 if (!(Test-Admin)) {
@@ -195,8 +195,8 @@ if (!$rustDeskId) {
 Write-Host "ID RustDesk deste equipamento: $rustDeskId"
 
 if (!$SkipRegister) {
-  Register-DRFlowHubRustDesk `
-    -ApiUrl $DRFlowHubApiUrl `
+  Register-UniFlowHubRustDesk `
+    -ApiUrl $UniFlowHubApiUrl `
     -LoginEmail $Email `
     -LoginPassword $Senha `
     -RustDeskId $rustDeskId `
