@@ -38,8 +38,23 @@ export interface PecaVendedor {
   pedidos: number;
   conversaoPercentual: number;
   metaVendas: number;
+  metaAtual: number;
+  metaMesAnterior: number;
   metaDataInicio?: string | null;
   metaDataFim?: string | null;
+  vendasDiarias: PecaVendaDiariaVendedor[];
+  metasMensais: PecaVendedorMetaMensal[];
+}
+
+export interface PecaVendaDiariaVendedor {
+  data: string;
+  faturamento: number;
+  pedidos: number;
+}
+
+export interface PecaVendedorMetaMensal {
+  mes: string;
+  valorMeta: number;
 }
 
 export interface PecaCanal {

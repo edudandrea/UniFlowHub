@@ -15,12 +15,14 @@ export interface PerfilSistema {
   nome: string;
   padraoSistema: boolean;
   acessos: string[];
+  empresas: number[];
 }
 
 export interface PerfilSistemaPayload {
   id?: number;
   nome: string;
   acessos: string[];
+  empresas: number[];
 }
 
 @Injectable({ providedIn: 'root' })

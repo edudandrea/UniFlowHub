@@ -230,7 +230,7 @@ input {
 
 .metrics {
   display: grid;
-  grid-template-columns: repeat(auto-fit,minmax(170px,1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
 }
 
@@ -489,10 +489,20 @@ input {
 
 .seller-list article {
   gap: 12px;
+  flex-wrap: wrap;
   padding: 12px;
   border: 1px solid var(--color-border);
   border-radius: 8px;
   background: var(--color-card-alt);
+}
+
+.seller-list article.seller-card {
+  cursor: pointer;
+}
+
+.seller-list article.seller-card.expanded {
+  border-color: var(--color-brand-blue);
+  background: var(--color-surface);
 }
 
 .ranking-date-filter {
@@ -561,11 +571,221 @@ input {
   color: var(--color-brand-blue);
 }
 
+.seller-meta-action {
+  min-height: 32px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--color-button-soft-bg);
+  color: var(--color-button-soft-text);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
 .seller-list aside {
   display: grid;
   gap: 4px;
   min-width: 150px;
   text-align: right;
+}
+
+.seller-detail {
+  display: grid;
+  gap: 14px;
+  width: 100%;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border);
+  cursor: default;
+}
+
+.seller-meta-comparison {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.seller-meta-comparison div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+}
+
+.seller-meta-comparison span,
+.seller-daily-row small {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.seller-meta-comparison strong {
+  overflow: hidden;
+  color: var(--color-brand-blue);
+  font-size: 18px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller-goal-formula {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+}
+
+.seller-goal-formula span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.seller-goal-formula strong {
+  color: var(--color-text);
+  overflow-wrap: anywhere;
+}
+
+.seller-goals-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+}
+
+.seller-goals-panel header {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0;
+}
+
+.seller-goals-panel header span {
+  color: var(--color-muted);
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.seller-goals-panel header strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--color-text);
+}
+
+.seller-month-filter {
+  display: flex;
+  align-items: end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.seller-month-filter label {
+  min-width: 140px;
+}
+
+.seller-combined-chart {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: 10px;
+  min-height: 190px;
+}
+
+.seller-combined-chart div {
+  display: grid;
+  grid-template-rows: 120px auto auto;
+  gap: 6px;
+  min-width: 0;
+  align-items: end;
+  text-align: center;
+}
+
+.seller-combined-chart span {
+  display: block;
+  width: min(48px, 70%);
+  min-height: 4px;
+  margin-inline: auto;
+  border-radius: 8px 8px 0 0;
+  background: var(--color-brand-blue);
+}
+
+.seller-combined-chart strong {
+  color: var(--color-text);
+  font-size: 12px;
+}
+
+.seller-combined-chart small {
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 11px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.seller-combined-chart .summary-bar {
+  padding-inline: 6px;
+  border-right: 1px solid var(--color-border);
+}
+
+.seller-combined-chart .summary-bar span {
+  width: min(64px, 74%);
+  background: linear-gradient(180deg, var(--color-brand-blue), var(--color-brand-green-strong));
+}
+
+.seller-daily-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 8px;
+  max-height: 330px;
+  overflow: auto;
+  padding-right: 4px;
+}
+
+.seller-daily-row {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+}
+
+.seller-daily-row time {
+  color: var(--color-brand-blue);
+  font-size: 12px;
+  font-weight: 900;
+}
+
+.seller-daily-row div {
+  display: grid;
+  gap: 4px;
+}
+
+.seller-daily-row strong {
+  color: var(--color-text);
+}
+
+.seller-daily-row p {
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--color-surface);
+}
+
+.seller-daily-row p span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
 }
 
 .seller-list small {
@@ -750,9 +970,12 @@ th {
 }
 
 @media (max-width: 1180px) {
-  .metrics,
   .bi-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .revenue-panel,
@@ -805,6 +1028,30 @@ th {
 
   .seller-list aside {
     text-align: left;
+  }
+
+  .seller-meta-comparison {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-goals-panel header,
+  .seller-month-filter {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .seller-combined-chart {
+    grid-template-columns: 1fr;
+  }
+
+  .seller-combined-chart .summary-bar {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border);
+    padding-bottom: 8px;
+  }
+
+  .seller-month-filter label {
+    width: 100%;
   }
 
   .goal-modal .grid.two {

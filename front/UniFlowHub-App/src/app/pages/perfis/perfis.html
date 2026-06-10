@@ -45,6 +45,7 @@
       <div class="profile-table-head" role="row">
         <span role="columnheader">Perfil</span>
         <span role="columnheader">Permissões</span>
+        <span role="columnheader">Empresas</span>
         <span role="columnheader">Tipo</span>
         <span role="columnheader">Ação</span>
       </div>
@@ -58,6 +59,7 @@
             <b>{{ perfil.acessos.length }}</b>
             {{ perfil.acessos.length === 1 ? 'permissão' : 'permissões' }}
           </span>
+          <span class="profile-meta" role="cell">{{ empresasResumo(perfil) }}</span>
           <span role="cell">
             <span class="profile-status" [class.custom]="!perfil.padraoSistema">{{ perfil.padraoSistema ? 'Padrão' : 'Personalizado' }}</span>
           </span>
@@ -85,6 +87,38 @@
           Nome do perfil de acesso
           <input [ngModel]="nome()" (ngModelChange)="nome.set($event)" name="nome" [disabled]="selected()?.padraoSistema === true" />
         </label>
+
+        <section class="company-scope">
+          <div class="company-scope-header">
+            <h3>Empresas de acesso</h3>
+            <span>{{ empresasSelecionadasResumo() }}</span>
+            <p class="modal-description">Deixe todas liberadas ou selecione somente as empresas que este perfil pode visualizar nos filtros.</p>
+          </div>
+          <div class="company-list" role="group" aria-label="Empresas de acesso">
+            <button
+              type="button"
+              class="company-pill"
+              [class.active]="!empresasSelecionadas().length"
+              (click)="toggleTodasEmpresas()"
+              [attr.aria-pressed]="!empresasSelecionadas().length"
+            >
+              <span class="pill-dot"></span>
+              <span>Todas as empresas</span>
+            </button>
+            @for (empresa of empresas(); track empresa.id) {
+              <button
+                type="button"
+                class="company-pill"
+                [class.active]="hasEmpresa(empresa.numero)"
+                (click)="toggleEmpresa(empresa.numero)"
+                [attr.aria-pressed]="hasEmpresa(empresa.numero)"
+              >
+                <span class="pill-dot"></span>
+                <span>{{ empresa.numero }} - {{ empresa.nome }}</span>
+              </button>
+            }
+          </div>
+        </section>
 
         <div class="access-layout">
           @for (grupo of acessosPorGrupo(); track grupo.grupo) {

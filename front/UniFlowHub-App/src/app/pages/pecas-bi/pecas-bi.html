@@ -40,7 +40,7 @@
       <label>
         Empresa
         <select [ngModel]="empresaNumero()" (ngModelChange)="setEmpresa($event)" [disabled]="isEmpresaFilterLocked()">
-          @if (!empresasPermitidasPorPerfil()) {
+          @if (!isEmpresaFilterLocked() && empresasDisponiveis().length !== 1) {
             <option [ngValue]="null">Todas</option>
           }
           @for (empresa of empresasDisponiveis(); track empresa.id) {
@@ -136,7 +136,7 @@
     <article>
       <span>Margem líquida</span>
       <strong>{{ formatMoney(margemLiquida()) }}</strong>
-      <p>Vendas brutas x {{ formatPercent(margemPercentual()) }}</p>
+      <p>Vendas brutas x {{ formatPercent(rentabilidadePercentual()) }}</p>
     </article>
     <article>
       <span>Rentabilidade</span>
@@ -313,10 +313,19 @@
         </header>
         <div class="seller-list">
           @for (seller of vendedores(); track seller.cpfVendedor || seller.nome; let index = $index) {
-            <article>
+            <article
+              class="seller-card"
+              [class.expanded]="isSellerExpanded(seller)"
+              (click)="toggleSellerDetails(seller)"
+              tabindex="0"
+              role="button"
+              [attr.aria-expanded]="isSellerExpanded(seller)"
+              [attr.aria-label]="'Detalhar vendedor ' + seller.nome"
+              (keydown.enter)="toggleSellerDetails(seller)"
+            >
               <span>{{ index + 1 }}</span>
               <div>
-                <button class="seller-name" type="button" (click)="openMetaModal(seller)">
+                <button class="seller-name" type="button" (click)="toggleSellerDetails(seller); $event.stopPropagation()">
                   {{ seller.nome }}
                 </button>
                 @if (seller.metaVendas > 0) {
@@ -335,7 +344,123 @@
                 <small [class]="sellerGoalClass(seller)">
                   Meta {{ seller.metaVendas > 0 ? formatMoney(seller.metaVendas) : 'sem meta' }}
                 </small>
+                <button class="seller-meta-action" type="button" (click)="openMetaModal(seller); $event.stopPropagation()">Editar meta</button>
               </aside>
+              @if (isSellerExpanded(seller)) {
+                <section class="seller-detail" (click)="$event.stopPropagation()">
+                  @let goal = sellerGoalSummary(seller);
+                  <div class="seller-meta-comparison">
+                    <div>
+                      <span>Meta mês passado</span>
+                      <strong>{{ seller.metaMesAnterior > 0 ? formatMoney(seller.metaMesAnterior) : 'Sem meta' }}</strong>
+                    </div>
+                    <div>
+                      <span>Meta atual</span>
+                      <strong>{{ seller.metaAtual > 0 ? formatMoney(seller.metaAtual) : 'Sem meta' }}</strong>
+                    </div>
+                    <div>
+                      <span>Meta</span>
+                      <strong>{{ goal.meta > 0 ? formatMoney(goal.meta) : 'Sem meta' }}</strong>
+                    </div>
+                    <div>
+                      <span>Dias úteis</span>
+                      <strong>{{ formatNumber(goal.diasUteis) }}</strong>
+                    </div>
+                    <div>
+                      <span>Dias trabalhados</span>
+                      <strong>{{ formatNumber(goal.diasTrabalhados) }}</strong>
+                    </div>
+                    <div>
+                      <span>Dias faltantes</span>
+                      <strong>{{ formatNumber(goal.diasFaltantes) }}</strong>
+                    </div>
+                    <div>
+                      <span>Meta dia original</span>
+                      <strong>{{ goal.metaDiaOriginal > 0 ? formatMoney(goal.metaDiaOriginal) : 'Sem meta' }}</strong>
+                    </div>
+                    <div>
+                      <span>Faturamento atual</span>
+                      <strong>{{ formatMoney(goal.faturamentoAtual) }}</strong>
+                    </div>
+                    <div>
+                      <span>Novo valor diário</span>
+                      <strong>{{ goal.novoValorDiario > 0 ? formatMoney(goal.novoValorDiario) : 'Meta concluída' }}</strong>
+                    </div>
+                  </div>
+
+                  <div class="seller-goals-panel">
+                    <header>
+                      <div>
+                        <span>Metas</span>
+                        <strong>Resumo e histórico filtrado</strong>
+                      </div>
+                      <div class="seller-month-filter">
+                        <label>
+                          Mês inicial
+                          <input type="month" [ngModel]="metaMesInicio()" (ngModelChange)="metaMesInicio.set($event)" />
+                        </label>
+                        <label>
+                          Mês final
+                          <input type="month" [ngModel]="metaMesFim()" (ngModelChange)="metaMesFim.set($event)" />
+                        </label>
+                      </div>
+                    </header>
+                    @let monthlyGoals = sellerMonthlyGoals(seller);
+                    <div class="seller-combined-chart" aria-label="Gráfico de metas do vendedor">
+                      <div class="summary-bar">
+                        <span [style.height.%]="sellerGoalChartHeight(goal.meta, seller)"></span>
+                        <strong>Meta</strong>
+                        <small>{{ formatMoney(goal.meta) }}</small>
+                      </div>
+                      <div class="summary-bar">
+                        <span [style.height.%]="sellerGoalChartHeight(goal.faturamentoAtual, seller)"></span>
+                        <strong>Atual</strong>
+                        <small>{{ formatMoney(goal.faturamentoAtual) }}</small>
+                      </div>
+                      <div class="summary-bar">
+                        <span [style.height.%]="sellerGoalChartHeight(goal.saldoRestante, seller)"></span>
+                        <strong>Saldo</strong>
+                        <small>{{ formatMoney(goal.saldoRestante) }}</small>
+                      </div>
+                      @if (monthlyGoals.length) {
+                        @for (item of monthlyGoals; track item.mes.toISOString()) {
+                          <div class="month-bar">
+                            <span [style.height.%]="sellerMonthlyGoalHeight(item.valorMeta, seller)"></span>
+                            <strong>{{ item.mes | date: 'MM/yyyy' }}</strong>
+                            <small>{{ formatMoney(item.valorMeta) }}</small>
+                          </div>
+                        }
+                      }
+                    </div>
+                    @if (!monthlyGoals.length) {
+                      <p class="empty-ranking">Nenhuma meta mensal encontrada para os meses selecionados.</p>
+                    }
+                  </div>
+
+                  <div class="seller-goal-formula">
+                    <span>Cálculo do novo valor diário</span>
+                    <strong>
+                      ({{ formatMoney(goal.meta) }} - {{ formatMoney(goal.faturamentoAtual) }}) / {{ formatNumber(goal.diasFaltantes) }} dias faltantes =
+                      {{ goal.novoValorDiario > 0 ? formatMoney(goal.novoValorDiario) : 'Meta concluída' }}
+                    </strong>
+                  </div>
+
+                  <div class="seller-daily-list">
+                    @for (day of sellerDailyRows(seller); track day.data.toISOString()) {
+                      <div class="seller-daily-row">
+                        <time>{{ day.data | date: 'dd/MM' }}</time>
+                        <div>
+                          <strong>{{ formatMoney(day.faturamento) }}</strong>
+                          <small>{{ day.pedidos }} pedidos de meta {{ formatMoney(day.metaDiaria) }}</small>
+                          <p><span [style.width.%]="sellerDailyPercent(day.faturamento, seller)" [style.background]="sellerGoalColor(seller)"></span></p>
+                        </div>
+                      </div>
+                    } @empty {
+                      <p class="empty-ranking">Nenhuma venda diária encontrada para o período.</p>
+                    }
+                  </div>
+                </section>
+              }
             </article>
           }
         </div>

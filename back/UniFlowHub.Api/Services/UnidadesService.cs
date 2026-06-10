@@ -21,17 +21,51 @@ namespace UniFlowHub.Api.Services
         public List<UnidadeResponseDto> List(string role)
         {
             IQueryable<Unidade> query = _repo.Query()
-                .AsNoTracking()
-                .Include(u => u.EmpresaCadastro);
+                .AsNoTracking();
+            var empresasPermitidas = GetEmpresasPermitidas(role);
 
             if (RoleScope.IsQualidadeNissan(role))
                 query = query.Where(u => u.EmpresaCadastro != null && u.EmpresaCadastro.Numero == 2);
+            else if (empresasPermitidas.Count > 0)
+                query = query.Where(u => u.EmpresaCadastro != null && empresasPermitidas.Contains(u.EmpresaCadastro.Numero));
 
             return query
                 .OrderBy(u => u.EmpresaCadastro == null ? u.Empresa : u.EmpresaCadastro.Nome)
                 .ThenBy(u => u.NumeroRevenda)
                 .ThenBy(u => u.Nome)
-                .Select(u => MapResponse(u))
+                .Select(u => new
+                {
+                    u.Id,
+                    u.Nome,
+                    u.EmpresaId,
+                    EmpresaNumero = u.EmpresaCadastro == null ? 0 : u.EmpresaCadastro.Numero,
+                    EmpresaNome = u.EmpresaCadastro == null ? u.Empresa : u.EmpresaCadastro.Nome,
+                    u.NumeroRevenda,
+                    u.Revenda,
+                    u.Cnpj,
+                    u.Endereco,
+                    u.DataCadastro
+                })
+                .AsEnumerable()
+                .Select(u =>
+                {
+                    var empresa = string.IsNullOrWhiteSpace(u.EmpresaNome) ? u.Nome : u.EmpresaNome;
+                    var revenda = string.IsNullOrWhiteSpace(u.Revenda) ? u.Nome : u.Revenda;
+
+                    return new UnidadeResponseDto
+                    {
+                        Id = u.Id,
+                        Nome = string.IsNullOrWhiteSpace(u.Nome) ? BuildNome(empresa, revenda) : u.Nome,
+                        EmpresaId = u.EmpresaId,
+                        EmpresaNumero = u.EmpresaNumero,
+                        NumeroRevenda = u.NumeroRevenda,
+                        Empresa = empresa,
+                        Revenda = revenda,
+                        Cnpj = u.Cnpj,
+                        Endereco = u.Endereco,
+                        DataCadastro = u.DataCadastro
+                    };
+                })
                 .ToList();
         }
 
@@ -40,14 +74,31 @@ namespace UniFlowHub.Api.Services
             var query = _context.Empresa
                 .AsNoTracking()
                 .AsQueryable();
+            var empresasPermitidas = GetEmpresasPermitidas(role);
 
             if (RoleScope.IsQualidadeNissan(role))
                 query = query.Where(e => e.Numero == 2);
+            else if (empresasPermitidas.Count > 0)
+                query = query.Where(e => empresasPermitidas.Contains(e.Numero));
 
             return query
                 .OrderBy(e => e.Numero)
                 .ThenBy(e => e.Nome)
                 .Select(e => MapEmpresa(e))
+                .ToList();
+        }
+
+        private List<int> GetEmpresasPermitidas(string role)
+        {
+            var perfil = PerfisService.NormalizePerfilName(role);
+            if (string.IsNullOrWhiteSpace(perfil))
+                return new List<int>();
+
+            return _context.PerfilSistema
+                .AsNoTracking()
+                .Where(p => p.Nome == perfil)
+                .SelectMany(p => p.Empresas.Select(e => e.EmpresaNumero))
+                .Distinct()
                 .ToList();
         }
 

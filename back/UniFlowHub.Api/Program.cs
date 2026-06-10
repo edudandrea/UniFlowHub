@@ -120,6 +120,7 @@ builder.Services.AddScoped<UnidadesService>();
 builder.Services.AddScoped<CartaoPontoService>();
 builder.Services.AddScoped<ControladoriaService>();
 builder.Services.AddScoped<VeiculosService>();
+builder.Services.AddScoped<VeiculosBiService>();
 builder.Services.AddScoped<PecasBiService>();
 builder.Services.AddScoped<PerfisService>();
 builder.Services.AddScoped<AuthService>();
@@ -130,8 +131,22 @@ var app = builder.Build();
 if (migrateMode)
 {
     using var scope = app.Services.CreateScope();
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
     var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    db.Database.Migrate();
+
+    try
+    {
+        logger.LogInformation("Aplicando migrations do banco interno PostgreSQL.");
+        db.Database.Migrate();
+        EnsureEmpresaLogoColumn(db);
+        logger.LogInformation("Migrations aplicadas com sucesso.");
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Falha ao aplicar migrations do banco interno PostgreSQL.");
+        throw;
+    }
+
     return;
 }
 
@@ -143,12 +158,21 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.Migrate();
+        EnsureEmpresaLogoColumn(db);
     }
     catch (Exception ex)
     {
         logger.LogError(ex, "Nao foi possivel aplicar migrations pendentes no startup.");
         throw;
     }
+}
+
+static void EnsureEmpresaLogoColumn(AppDbContext db)
+{
+    db.Database.ExecuteSqlRaw("""
+        ALTER TABLE "Empresa"
+        ADD COLUMN IF NOT EXISTS "LogoUrl" text NOT NULL DEFAULT '';
+        """);
 }
 
 // 🔹 Swagger (sempre ativo - pode limitar só para dev se quiser)

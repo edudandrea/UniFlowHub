@@ -9,6 +9,17 @@ namespace UniFlowHub.Api.Services
     public class PerfisService
     {
         private readonly AppDbContext _context;
+        private static readonly HashSet<string> LegacyPecasBiAcessos = new(StringComparer.OrdinalIgnoreCase)
+        {
+            "pecas-bi-renault",
+            "pecas-bi-nissan",
+            "pecas-bi-gm",
+            "pecas-bi-fiat",
+            "pecas-bi-bajaj",
+            "pecas-bi-peugeot-citroen",
+            "pecas-bi-mg",
+            "pecas-bi-geely",
+        };
 
         public static readonly List<AcessoSistemaDto> AcessosDisponiveis = new()
         {
@@ -25,15 +36,7 @@ namespace UniFlowHub.Api.Services
             new() { Chave = "compras-admin", Nome = "Administrador do setor de Compras", Grupo = "Administradores de setor" },
             new() { Chave = "controladoria", Nome = "Controladoria", Grupo = "Departamentos" },
             new() { Chave = "pecas-admin", Nome = "Administrador do setor de Peças", Grupo = "Administradores de setor" },
-            new() { Chave = "vendas-pecas", Nome = "BI de Peças - Geral", Grupo = "BI" },
-            new() { Chave = "pecas-bi-renault", Nome = "BI de Peças - Renault", Grupo = "BI" },
-            new() { Chave = "pecas-bi-nissan", Nome = "BI de Peças - Nissan", Grupo = "BI" },
-            new() { Chave = "pecas-bi-gm", Nome = "BI de Peças - GM", Grupo = "BI" },
-            new() { Chave = "pecas-bi-fiat", Nome = "BI de Peças - Fiat", Grupo = "BI" },
-            new() { Chave = "pecas-bi-bajaj", Nome = "BI de Peças - Bajaj", Grupo = "BI" },
-            new() { Chave = "pecas-bi-peugeot-citroen", Nome = "BI de Peças - Peugeot/Citroen", Grupo = "BI" },
-            new() { Chave = "pecas-bi-mg", Nome = "BI de Peças - MG", Grupo = "BI" },
-            new() { Chave = "pecas-bi-geely", Nome = "BI de Peças - Geely", Grupo = "BI" },
+            new() { Chave = "vendas-pecas", Nome = "BI de Peças", Grupo = "BI" },
             new() { Chave = "veiculos", Nome = "Estoque de veículos", Grupo = "Veículos" },
             new() { Chave = "veiculos-repasses", Nome = "Repasse de veículos", Grupo = "Veículos" },
             new() { Chave = "veiculos-bi", Nome = "BI de veículos", Grupo = "BI" },
@@ -54,14 +57,6 @@ namespace UniFlowHub.Api.Services
                 "equipamentos-ti",
                 "controladoria",
                 "vendas-pecas",
-                "pecas-bi-renault",
-                "pecas-bi-nissan",
-                "pecas-bi-gm",
-                "pecas-bi-fiat",
-                "pecas-bi-bajaj",
-                "pecas-bi-peugeot-citroen",
-                "pecas-bi-mg",
-                "pecas-bi-geely",
                 "veiculos",
                 "veiculos-repasses",
                 "veiculos-bi",
@@ -99,17 +94,22 @@ namespace UniFlowHub.Api.Services
         {
             EnsureCanManage(role);
             await EnsureDefaultsAsync();
-            return await _context.PerfilSistema
+            var perfis = await _context.PerfilSistema
                 .Include(p => p.Acessos)
+                .Include(p => p.Empresas)
                 .OrderBy(p => p.Nome)
+                .ToListAsync();
+
+            return perfis
                 .Select(p => new PerfilSistemaDto
                 {
                     Id = p.Id,
                     Nome = p.Nome,
                     PadraoSistema = p.PadraoSistema,
-                    Acessos = p.Acessos.Select(a => a.Chave).OrderBy(a => a).ToList()
+                    Acessos = p.Acessos.Select(a => NormalizeAcessoChave(a.Chave)).Distinct().OrderBy(a => a).ToList(),
+                    Empresas = p.Empresas.Select(e => e.EmpresaNumero).OrderBy(e => e).ToList()
                 })
-                .ToListAsync();
+                .ToList();
         }
 
         public async Task<PerfilSistemaDto> SaveAsync(string role, PerfilSistemaSaveDto dto)
@@ -122,12 +122,21 @@ namespace UniFlowHub.Api.Services
                 throw new InvalidOperationException("Nome do perfil é obrigatório.");
 
             var validKeys = AcessosDisponiveis.Select(a => a.Chave).ToHashSet(StringComparer.OrdinalIgnoreCase);
-            var acessos = dto.Acessos.Where(validKeys.Contains).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+            var acessos = dto.Acessos
+                .Select(NormalizeAcessoChave)
+                .Where(validKeys.Contains)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+            var empresas = dto.Empresas
+                .Where(numero => numero > 0)
+                .Distinct()
+                .OrderBy(numero => numero)
+                .ToList();
 
             var perfilId = dto.Id.GetValueOrDefault();
             var perfil = perfilId > 0
-                ? await _context.PerfilSistema.Include(p => p.Acessos).FirstOrDefaultAsync(p => p.Id == perfilId)
-                : await _context.PerfilSistema.Include(p => p.Acessos).FirstOrDefaultAsync(p => p.Nome.ToLower() == nome.ToLower());
+                ? await _context.PerfilSistema.Include(p => p.Acessos).Include(p => p.Empresas).FirstOrDefaultAsync(p => p.Id == perfilId)
+                : await _context.PerfilSistema.Include(p => p.Acessos).Include(p => p.Empresas).FirstOrDefaultAsync(p => p.Nome.ToLower() == nome.ToLower());
             if (perfil is null)
             {
                 if (perfilId > 0)
@@ -149,6 +158,7 @@ namespace UniFlowHub.Api.Services
                 var previousName = perfil.Nome;
                 perfil.Nome = nome;
                 _context.PerfilSistemaAcesso.RemoveRange(perfil.Acessos);
+                _context.PerfilSistemaEmpresa.RemoveRange(perfil.Empresas);
 
                 if (!perfil.PadraoSistema && !string.Equals(previousName, nome, StringComparison.OrdinalIgnoreCase))
                 {
@@ -160,18 +170,37 @@ namespace UniFlowHub.Api.Services
 
             foreach (var acesso in acessos)
                 perfil.Acessos.Add(new PerfilSistemaAcesso { Chave = acesso });
+            foreach (var empresa in empresas)
+                perfil.Empresas.Add(new PerfilSistemaEmpresa { EmpresaNumero = empresa });
 
             await _context.SaveChangesAsync();
-            return new PerfilSistemaDto { Id = perfil.Id, Nome = perfil.Nome, PadraoSistema = perfil.PadraoSistema, Acessos = acessos };
+            return new PerfilSistemaDto { Id = perfil.Id, Nome = perfil.Nome, PadraoSistema = perfil.PadraoSistema, Acessos = acessos, Empresas = empresas };
         }
 
         public async Task<List<string>> GetAcessosByPerfilAsync(string role)
         {
             await EnsureDefaultsAsync();
             var normalized = NormalizePerfilName(role);
-            return await _context.PerfilSistema
+            var acessos = await _context.PerfilSistema
                 .Where(p => p.Nome == normalized)
                 .SelectMany(p => p.Acessos.Select(a => a.Chave))
+                .ToListAsync();
+
+            return acessos
+                .Select(NormalizeAcessoChave)
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList();
+        }
+
+        public async Task<List<int>> GetEmpresasByPerfilAsync(string role)
+        {
+            await EnsureDefaultsAsync();
+            var normalized = NormalizePerfilName(role);
+            return await _context.PerfilSistema
+                .Where(p => p.Nome == normalized)
+                .SelectMany(p => p.Empresas.Select(e => e.EmpresaNumero))
+                .Distinct()
+                .OrderBy(e => e)
                 .ToListAsync();
         }
 
@@ -230,6 +259,11 @@ namespace UniFlowHub.Api.Services
         {
             var normalized = AuthService.NormalizeBuiltInRole(role);
             return string.IsNullOrWhiteSpace(normalized) ? role.Trim() : normalized;
+        }
+
+        private static string NormalizeAcessoChave(string chave)
+        {
+            return LegacyPecasBiAcessos.Contains(chave) ? "vendas-pecas" : chave;
         }
 
         private static void EnsureCanManage(string role)

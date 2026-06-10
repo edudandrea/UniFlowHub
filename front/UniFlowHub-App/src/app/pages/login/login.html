@@ -1,18 +1,9 @@
 <main class="login-shell">
-  <label class="theme-picker login-theme-toggle">
-    Tema
-    <select [value]="theme.current()" (change)="theme.setTheme($any($event.target).value)">
-      @for (option of theme.options; track option.value) {
-        <option [value]="option.value">{{ option.label }}</option>
-      }
-    </select>
-  </label>
-
-  <section class="brand-panel">
+   <section class="brand-panel">
     <div class="brand-lockup">
       <div>
         <p>UniFlowHub</p>
-        <span>Conectando soluções, impulsionando setores</span>
+        <span>Conectando soluÃ§Ãµes, impulsionando setores</span>
       </div>
     </div>
     <h1>HUB integrado com rastreio claro e acesso por perfil.</h1>

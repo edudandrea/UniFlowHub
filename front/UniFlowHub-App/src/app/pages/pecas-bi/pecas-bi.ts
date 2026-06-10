@@ -50,6 +50,7 @@ export class PecasBiPage implements OnInit {
   readonly revendas = signal<Unidade[]>([]);
   readonly empresasPermitidasServidor = signal<number[] | null>(null);
   readonly revendasPermitidasServidor = signal<number[] | null>(null);
+  readonly escopoServidorCarregado = signal(false);
   readonly empresaNumero = signal<number | null>(null);
   readonly revendasSelecionadas = signal<number[]>([]);
   readonly dataInicio = signal(this.toDateInput(this.firstDayOfCurrentMonth()));
@@ -70,6 +71,9 @@ export class PecasBiPage implements OnInit {
   readonly revendaPickerOpen = signal(false);
   readonly canalPickerOpen = signal(false);
   readonly pecaSortField = signal<'nome' | 'quantidade' | 'faturamento'>('faturamento');
+  readonly expandedSellerKey = signal<string | null>(null);
+  readonly metaMesInicio = signal(this.monthInputValue(new Date(new Date().getFullYear(), 0, 1)));
+  readonly metaMesFim = signal(this.monthInputValue(new Date(new Date().getFullYear(), 11, 1)));
 
   readonly canais = computed(() => this.canShowGmTransactions()
     ? [...ALLOWED_CHANNELS]
@@ -104,6 +108,10 @@ export class PecasBiPage implements OnInit {
   });
   readonly empresasPermitidasPorPerfil = computed(() => {
     const empresasServidor = this.empresasPermitidasServidor();
+    if (this.escopoServidorCarregado() && empresasServidor === null) {
+      return null;
+    }
+
     if (empresasServidor) {
       return empresasServidor;
     }
@@ -119,10 +127,11 @@ export class PecasBiPage implements OnInit {
     return [...new Set(empresas)];
   });
   readonly canUseEmpresaRevendaFilters = computed(() => true);
-  readonly isEmpresaFilterLocked = computed(() => this.isGerenteEmpresaPecas() || (this.empresasPermitidasPorPerfil()?.length === 1));
-  readonly gerenteEmpresaNumeroEfetiva = computed(() => this.empresasPermitidasPorPerfil()?.[0] ?? this.userEmpresaNumero());
+  readonly hasAcessoGeralServidor = computed(() => this.escopoServidorCarregado() && this.empresasPermitidasServidor() === null);
+  readonly isEmpresaFilterLocked = computed(() => !this.hasAcessoGeralServidor() && (this.isGerenteEmpresaPecas() || (this.empresasPermitidasPorPerfil()?.length === 1)));
+  readonly gerenteEmpresaNumeroEfetiva = computed(() => this.hasAcessoGeralServidor() ? null : this.empresasPermitidasPorPerfil()?.[0] ?? this.userEmpresaNumero());
   readonly empresasDisponiveis = computed(() => {
-    if (this.isGerenteEmpresaPecas()) {
+    if (this.isGerenteEmpresaPecas() && !this.hasAcessoGeralServidor()) {
       const empresaNumero = this.gerenteEmpresaNumeroEfetiva();
       return this.empresas().filter((empresa) => empresa.numero === empresaNumero);
     }
@@ -170,7 +179,6 @@ export class PecasBiPage implements OnInit {
   readonly quantidadeTotal = computed(() => this.vendas().reduce((total, item) => total + item.quantidade, 0));
   readonly ticketMedio = computed(() => this.quantidadeTotal() ? this.faturamentoTotal() / this.quantidadeTotal() : 0);
   readonly margemPercentual = computed(() => this.faturamentoTotal() ? (this.margemTotal() / this.faturamentoTotal()) * 100 : 0);
-  readonly margemLiquida = computed(() => this.faturamentoTotal() * (this.margemPercentual() / 100));
   readonly rentabilidadePercentual = computed(() => {
     const faturamento = this.faturamentoTotal();
     if (!faturamento) {
@@ -179,6 +187,7 @@ export class PecasBiPage implements OnInit {
 
     return (this.rentabilidadeTotal() / faturamento) * 100;
   });
+  readonly margemLiquida = computed(() => this.faturamentoTotal() * (this.rentabilidadePercentual() / 100));
   readonly crescimento = computed(() => {
     const vendas = this.vendas();
     const atual = vendas.at(-1)?.faturamento ?? 0;
@@ -246,7 +255,10 @@ export class PecasBiPage implements OnInit {
 
   loadEmpresas(): void {
     this.unidadesService.listEmpresas().subscribe({
-      next: (empresas) => this.empresas.set(empresas.slice().sort((a, b) => a.numero - b.numero || a.nome.localeCompare(b.nome))),
+      next: (empresas) => {
+        this.empresas.set(empresas.slice().sort((a, b) => a.numero - b.numero || a.nome.localeCompare(b.nome)));
+        this.applyUserScopeDefaults();
+      },
       error: () => this.toastr.error('Não foi possível carregar as empresas cadastradas.', 'B.I Peças'),
     });
   }
@@ -276,8 +288,10 @@ export class PecasBiPage implements OnInit {
       next: (data) => {
         this.empresasPermitidasServidor.set(data.empresasPermitidas ?? null);
         this.revendasPermitidasServidor.set(data.revendasPermitidas ?? null);
+        this.escopoServidorCarregado.set(true);
         this.applyUserScopeDefaults();
         this.data.set(data);
+        this.expandedSellerKey.set(null);
         this.loading.set(false);
         void this.spinner.hide();
       },
@@ -511,6 +525,129 @@ export class PecasBiPage implements OnInit {
     return this.statusColor(this.sellerGoalClass(seller));
   }
 
+  sellerKey(seller: PecaVendedor): string {
+    return seller.cpfVendedor || seller.nome;
+  }
+
+  toggleSellerDetails(seller: PecaVendedor): void {
+    const key = this.sellerKey(seller);
+    this.expandedSellerKey.set(this.expandedSellerKey() === key ? null : key);
+  }
+
+  isSellerExpanded(seller: PecaVendedor): boolean {
+    return this.expandedSellerKey() === this.sellerKey(seller);
+  }
+
+  sellerMetaDiaria(seller: PecaVendedor): number {
+    return this.sellerGoalSummary(seller).metaDiaOriginal;
+  }
+
+  sellerDailyRows(seller: PecaVendedor): { data: Date; faturamento: number; pedidos: number; metaDiaria: number }[] {
+    const start = this.safeDate(this.rankingDataInicio());
+    const end = this.safeDate(this.rankingDataFim());
+    if (!start || !end || start > end) {
+      return [];
+    }
+
+    const vendasPorDia = new Map((seller.vendasDiarias ?? []).map((item) => [this.toDateInput(new Date(item.data)), item]));
+    const metaDiaria = this.sellerGoalSummary(seller).novoValorDiario;
+    const rows: { data: Date; faturamento: number; pedidos: number; metaDiaria: number }[] = [];
+    const cursor = new Date(start);
+
+    while (cursor <= end) {
+      const key = this.toDateInput(cursor);
+      const venda = vendasPorDia.get(key);
+      rows.push({
+        data: new Date(cursor),
+        faturamento: venda?.faturamento ?? 0,
+        pedidos: venda?.pedidos ?? 0,
+        metaDiaria,
+      });
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return rows;
+  }
+
+  sellerDailyPercent(value: number, seller: PecaVendedor): number {
+    const target = this.sellerGoalSummary(seller).novoValorDiario;
+    return target > 0 ? this.progressWidth((value / target) * 100) : 0;
+  }
+
+  sellerGoalSummary(seller: PecaVendedor): {
+    meta: number;
+    faturamentoAtual: number;
+    saldoRestante: number;
+    diasUteis: number;
+    diasTrabalhados: number;
+    diasFaltantes: number;
+    metaDiaOriginal: number;
+    novoValorDiario: number;
+  } {
+    const meta = seller.metaVendas || 0;
+    const faturamentoAtual = seller.faturamento || 0;
+    const saldoRestante = Math.max(meta - faturamentoAtual, 0);
+    const start = this.safeDate(seller.metaDataInicio) ?? this.safeDate(this.rankingDataInicio());
+    const end = this.safeDate(seller.metaDataFim) ?? this.safeDate(this.rankingDataFim());
+
+    if (!start || !end || start > end) {
+      return {
+        meta,
+        faturamentoAtual,
+        saldoRestante,
+        diasUteis: 0,
+        diasTrabalhados: 0,
+        diasFaltantes: 0,
+        metaDiaOriginal: 0,
+        novoValorDiario: 0,
+      };
+    }
+
+    const today = this.startOfDay(new Date());
+    const workedUntil = today < start ? new Date(start.getTime() - 86400000) : today > end ? end : today;
+    const diasUteis = this.businessDaysBetween(start, end);
+    const diasTrabalhados = workedUntil < start ? 0 : this.businessDaysBetween(start, workedUntil);
+    const diasFaltantes = Math.max(diasUteis - diasTrabalhados, 0);
+
+    return {
+      meta,
+      faturamentoAtual,
+      saldoRestante,
+      diasUteis,
+      diasTrabalhados,
+      diasFaltantes,
+      metaDiaOriginal: meta > 0 && diasUteis > 0 ? meta / diasUteis : 0,
+      novoValorDiario: saldoRestante > 0 && diasFaltantes > 0 ? saldoRestante / diasFaltantes : 0,
+    };
+  }
+
+  sellerGoalChartHeight(value: number, seller: PecaVendedor): number {
+    const summary = this.sellerGoalSummary(seller);
+    const max = Math.max(summary.meta, summary.faturamentoAtual, summary.saldoRestante, 1);
+    return Math.max(4, (value / max) * 100);
+  }
+
+  sellerMonthlyGoals(seller: PecaVendedor): { mes: Date; valorMeta: number }[] {
+    const start = this.safeMonth(this.metaMesInicio());
+    const end = this.safeMonth(this.metaMesFim());
+    if (!start || !end || start > end) {
+      return [];
+    }
+
+    return (seller.metasMensais ?? [])
+      .map((item) => ({
+        mes: this.safeMonth(item.mes) ?? this.safeDate(item.mes) ?? new Date(0),
+        valorMeta: item.valorMeta,
+      }))
+      .filter((item) => item.mes.getTime() > 0 && item.mes >= start && item.mes <= end)
+      .sort((a, b) => a.mes.getTime() - b.mes.getTime());
+  }
+
+  sellerMonthlyGoalHeight(value: number, seller: PecaVendedor): number {
+    const max = Math.max(...this.sellerMonthlyGoals(seller).map((item) => item.valorMeta), 1);
+    return Math.max(4, (value / max) * 100);
+  }
+
   pecaSortLabel(): string {
     const labels: Record<'nome' | 'quantidade' | 'faturamento', string> = {
       nome: 'Nome do item',
@@ -531,6 +668,59 @@ export class PecasBiPage implements OnInit {
 
   private progressWidth(value: number): number {
     return Math.max(0, Math.min(value, 100));
+  }
+
+  private safeDate(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const [year, month, day] = value.slice(0, 10).split('-').map((part) => Number(part));
+    if (!year || !month || !day) {
+      return null;
+    }
+
+    return new Date(year, month - 1, day);
+  }
+
+  private safeMonth(value: string | null | undefined): Date | null {
+    if (!value) {
+      return null;
+    }
+
+    const [year, month] = value.slice(0, 7).split('-').map((part) => Number(part));
+    if (!year || !month) {
+      return null;
+    }
+
+    return new Date(year, month - 1, 1);
+  }
+
+  private monthInputValue(value: Date): string {
+    return `${value.getFullYear()}-${String(value.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  private startOfDay(value: Date): Date {
+    return new Date(value.getFullYear(), value.getMonth(), value.getDate());
+  }
+
+  private businessDaysBetween(start: Date, end: Date): number {
+    if (start > end) {
+      return 0;
+    }
+
+    let total = 0;
+    const cursor = this.startOfDay(start);
+    const last = this.startOfDay(end);
+    while (cursor <= last) {
+      const day = cursor.getDay();
+      if (day !== 0 && day !== 6) {
+        total += 1;
+      }
+      cursor.setDate(cursor.getDate() + 1);
+    }
+
+    return total;
   }
 
   private channelMidAngle(index: number): number {
@@ -744,6 +934,18 @@ export class PecasBiPage implements OnInit {
     const empresasPermitidas = this.empresasPermitidasPorPerfil();
     if (empresasPermitidas?.length === 1) {
       this.empresaNumero.set(empresasPermitidas[0]);
+      this.revendasSelecionadas.set([]);
+      return;
+    }
+
+    if (!empresasPermitidas && !this.empresaNumero() && this.empresasDisponiveis().length === 1) {
+      this.empresaNumero.set(this.empresasDisponiveis()[0].numero);
+      this.revendasSelecionadas.set([]);
+      return;
+    }
+
+    if (empresasPermitidas?.length && this.empresaNumero() && !empresasPermitidas.includes(this.empresaNumero()!)) {
+      this.empresaNumero.set(null);
       this.revendasSelecionadas.set([]);
     }
   }

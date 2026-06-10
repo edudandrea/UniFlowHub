@@ -45,7 +45,7 @@ namespace UniFlowHub.Api.Services
                         + COALESCE(FMI.VAL_FRETE, 0)
                     ) AS FATURAMENTO,
                     SUM(
-                        ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
+                        (COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100)
                         + COALESCE(FMI.VAL_ICMS_PARTIL_UF_DEST, 0)
                         + COALESCE(FMI.DIFERENCA_ICMS_REDUZIDO, 0)
                         + COALESCE(FMI.VAL_PIS, 0)
@@ -53,7 +53,7 @@ namespace UniFlowHub.Api.Services
                         + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
                     ) AS DESPESAS_RENTABILIDADE,
                     SUM(
-                        ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
+                        (COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100)
                         + COALESCE(FMI.VAL_ICMS_RETIDO, 0)
                         + COALESCE(FMI.VAL_IPI, 0)
                         + COALESCE(FMI.VAL_PIS, 0)
@@ -264,6 +264,12 @@ namespace UniFlowHub.Api.Services
             GROUP BY CPF_VENDEDOR, NOME_VENDEDOR
             ORDER BY FATURAMENTO DESC";
 
+        private const string VendedoresDiarioSql = BaseCapaSql + @"
+            SELECT CPF_VENDEDOR, TRUNC(DTA_ENTRADA_SAIDA) AS DATA, SUM(FATURAMENTO) AS FATURAMENTO, SUM(QTD_NOTAS) AS PEDIDOS
+            FROM BASE
+            GROUP BY CPF_VENDEDOR, TRUNC(DTA_ENTRADA_SAIDA)
+            ORDER BY CPF_VENDEDOR, TRUNC(DTA_ENTRADA_SAIDA)";
+
         private const string TopCompradoresSql = BaseCapaSql + @"
             SELECT *
             FROM (
@@ -406,7 +412,7 @@ namespace UniFlowHub.Api.Services
                                         ELSE 1
                                     END * (
                                         COALESCE(FMI.VAL_CUSTO_MEDIO, 0)
-                                        + ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
+                                        + (COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100)
                                         + COALESCE(FMI.VAL_ICMS_PARTIL_UF_DEST, 0)
                                         + COALESCE(FMI.DIFERENCA_ICMS_REDUZIDO, 0)
                                         + COALESCE(FMI.VAL_PIS, 0)
@@ -546,7 +552,7 @@ namespace UniFlowHub.Api.Services
                 empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
                 revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
             }
-            else if (RoleScope.IsGerentePecas(role))
+            else if (!accessScope.AcessoGeral && RoleScope.IsGerentePecas(role))
             {
                 if (!accessScope.EmpresaNumero.HasValue || accessScope.EmpresaNumero.Value <= 0)
                     throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
@@ -572,7 +578,8 @@ namespace UniFlowHub.Api.Services
                 ? await LoadTopClientesAsync(connection, TopSeguradorasSql, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal)
                 : new List<PecaClienteDto>();
             var pecas = await LoadTopPecasAsync(connection, dataInicio, dataFim, empresa, revenda, cpfVendedor, canal);
-            await ApplyMetasAsync(vendedores);
+            await ApplyVendasDiariasAsync(connection, vendedores, rankingDataInicio, rankingDataFim, empresa, revenda, canal);
+            await ApplyMetasAsync(vendedores, rankingDataInicio, rankingDataFim);
             var minhaMeta = await LoadMinhaMetaAsync(connection, cpfVendedor, canal, dataInicio, dataFim);
 
             return new PecasBiResponseDto
@@ -616,7 +623,7 @@ namespace UniFlowHub.Api.Services
                 empresa = ApplyEmpresaScope(empresa, empresasPermitidas);
                 revenda = ApplyRevendaScope(revenda, accessScope.RevendasPermitidas ?? Array.Empty<int>());
             }
-            else if (RoleScope.IsGerentePecas(role))
+            else if (!accessScope.AcessoGeral && RoleScope.IsGerentePecas(role))
             {
                 if (!accessScope.EmpresaNumero.HasValue || accessScope.EmpresaNumero.Value <= 0)
                     throw new UnauthorizedAccessException("Empresa do gerente de pecas nao configurada no cadastro do usuario.");
@@ -650,7 +657,10 @@ namespace UniFlowHub.Api.Services
             if (dataInicio > dataFim)
                 throw new InvalidOperationException("A data inicial da meta nao pode ser maior que a data final.");
 
-            var meta = await _context.PecaVendedorMeta.FirstOrDefaultAsync(item => item.CpfVendedor == cpf);
+            var meta = await _context.PecaVendedorMeta.FirstOrDefaultAsync(item =>
+                item.CpfVendedor == cpf
+                && item.DataInicio == dataInicio
+                && item.DataFim == dataFim);
             if (meta is null)
             {
                 meta = new PecaVendedorMeta { CpfVendedor = cpf };
@@ -679,19 +689,26 @@ namespace UniFlowHub.Api.Services
         private async Task<PecaBiAccessScope> GetAccessScopeAsync(string role, int userId)
         {
             var perfilAcessos = await GetPerfilAcessosAsync(role);
+            var perfilEmpresas = await GetPerfilEmpresasAsync(role);
             var adminPecas = perfilAcessos.Contains("pecas-admin");
             var empresasPermitidas = perfilAcessos
                 .Where(PecasBiEmpresaPorAcesso.ContainsKey)
                 .Select(acesso => PecasBiEmpresaPorAcesso[acesso])
+                .Concat(perfilEmpresas)
                 .Distinct()
                 .OrderBy(empresa => empresa)
                 .ToList();
             var possuiEscopoPorEmpresa = empresasPermitidas.Count > 0;
-            var acessoGeral = RoleScope.IsAdmin(role)
+            var podeTerAcessoGeralSemEscopo = RoleScope.IsAdmin(role)
                 || RoleScope.IsTI(role)
                 || RoleScope.IsGerenteGeralPecas(role)
                 || adminPecas
-                || (perfilAcessos.Contains("vendas-pecas") && !possuiEscopoPorEmpresa);
+                || perfilAcessos.Contains("vendas-pecas");
+            var todasEmpresasPermitidas = possuiEscopoPorEmpresa
+                && await CoversAllEmpresasAsync(empresasPermitidas);
+            var acessoGeral = (!possuiEscopoPorEmpresa && podeTerAcessoGeralSemEscopo)
+                || (todasEmpresasPermitidas
+                    && (podeTerAcessoGeralSemEscopo || RoleScope.IsGerentePecas(role)));
             var revendasPermitidas = !acessoGeral && possuiEscopoPorEmpresa
                 ? await GetRevendasPermitidasAsync(empresasPermitidas)
                 : null;
@@ -803,6 +820,36 @@ namespace UniFlowHub.Api.Services
             return items;
         }
 
+        private static async Task ApplyVendasDiariasAsync(OracleConnection connection, List<PecaVendedorDto> vendedores, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, object canal)
+        {
+            if (vendedores.Count == 0)
+                return;
+
+            var vendedoresPorCpf = vendedores
+                .GroupBy(vendedor => OnlyDigits(vendedor.CpfVendedor))
+                .Where(group => !string.IsNullOrWhiteSpace(group.Key))
+                .ToDictionary(group => group.Key, group => group.First());
+
+            if (vendedoresPorCpf.Count == 0)
+                return;
+
+            await using var command = CreateCommand(connection, VendedoresDiarioSql, dataInicio, dataFim, empresa, revenda, null, canal);
+            await using var reader = await command.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+            {
+                var cpf = OnlyDigits(GetString(reader, "CPF_VENDEDOR"));
+                if (!vendedoresPorCpf.TryGetValue(cpf, out var vendedor))
+                    continue;
+
+                vendedor.VendasDiarias.Add(new PecaVendaDiariaVendedorDto
+                {
+                    Data = GetDateTime(reader, "DATA"),
+                    Faturamento = GetDecimal(reader, "FATURAMENTO"),
+                    Pedidos = GetInt(reader, "PEDIDOS")
+                });
+            }
+        }
+
         private static async Task<List<PecaClienteDto>> LoadTopClientesAsync(OracleConnection connection, string sql, DateTime dataInicio, DateTime dataFim, object empresa, object revenda, string? cpfVendedor, object canal)
         {
             var items = new List<PecaClienteDto>();
@@ -822,7 +869,7 @@ namespace UniFlowHub.Api.Services
             return items;
         }
 
-        private async Task ApplyMetasAsync(List<PecaVendedorDto> vendedores)
+        private async Task ApplyMetasAsync(List<PecaVendedorDto> vendedores, DateTime rankingDataInicio, DateTime rankingDataFim)
         {
             var cpfs = vendedores
                 .Select(vendedor => OnlyDigits(vendedor.CpfVendedor))
@@ -835,18 +882,78 @@ namespace UniFlowHub.Api.Services
 
             var metas = await _context.PecaVendedorMeta
                 .Where(meta => cpfs.Contains(meta.CpfVendedor))
-                .ToDictionaryAsync(meta => meta.CpfVendedor);
+                .ToListAsync();
+
+            var inicioMesAtual = new DateTime(DateTime.Today.Year, DateTime.Today.Month, 1);
+            var fimMesAtual = inicioMesAtual.AddMonths(1).AddTicks(-1);
+            var inicioMesAnterior = inicioMesAtual.AddMonths(-1);
+            var fimMesAnterior = inicioMesAtual.AddTicks(-1);
 
             foreach (var vendedor in vendedores)
             {
                 var cpf = OnlyDigits(vendedor.CpfVendedor);
-                if (metas.TryGetValue(cpf, out var meta))
+                var metasVendedor = metas
+                    .Where(meta => meta.CpfVendedor == cpf)
+                    .OrderByDescending(meta => meta.DataInicio ?? DateTime.MinValue)
+                    .ThenByDescending(meta => meta.DataAtualizacao)
+                    .ToList();
+
+                var metaPeriodo = metasVendedor.FirstOrDefault(meta => MetaIntersects(meta, rankingDataInicio, rankingDataFim))
+                    ?? metasVendedor.FirstOrDefault(meta => MetaIntersects(meta, inicioMesAtual, fimMesAtual))
+                    ?? metasVendedor.FirstOrDefault();
+
+                if (metaPeriodo is not null)
                 {
-                    vendedor.MetaVendas = meta.ValorMeta;
-                    vendedor.MetaDataInicio = meta.DataInicio;
-                    vendedor.MetaDataFim = meta.DataFim;
+                    vendedor.MetaVendas = metaPeriodo.ValorMeta;
+                    vendedor.MetaDataInicio = metaPeriodo.DataInicio;
+                    vendedor.MetaDataFim = metaPeriodo.DataFim;
+                }
+
+                vendedor.MetaAtual = metasVendedor.FirstOrDefault(meta => MetaIntersects(meta, inicioMesAtual, fimMesAtual))?.ValorMeta ?? 0;
+                vendedor.MetaMesAnterior = metasVendedor.FirstOrDefault(meta => MetaIntersects(meta, inicioMesAnterior, fimMesAnterior))?.ValorMeta ?? 0;
+                vendedor.MetasMensais = BuildMetasMensais(metasVendedor);
+            }
+        }
+
+        private static List<PecaVendedorMetaMensalDto> BuildMetasMensais(List<PecaVendedorMeta> metas)
+        {
+            var porMes = new Dictionary<DateTime, PecaVendedorMetaMensalDto>();
+
+            foreach (var meta in metas.Where(meta => meta.DataInicio.HasValue && meta.DataFim.HasValue))
+            {
+                var cursor = new DateTime(meta.DataInicio!.Value.Year, meta.DataInicio.Value.Month, 1);
+                var fim = new DateTime(meta.DataFim!.Value.Year, meta.DataFim.Value.Month, 1);
+                while (cursor <= fim)
+                {
+                    if (!porMes.TryGetValue(cursor, out var atual) || meta.DataAtualizacao >= metas
+                        .Where(item => item.DataInicio.HasValue
+                            && item.DataFim.HasValue
+                            && new DateTime(item.DataInicio.Value.Year, item.DataInicio.Value.Month, 1) <= cursor
+                            && new DateTime(item.DataFim.Value.Year, item.DataFim.Value.Month, 1) >= cursor)
+                        .Max(item => item.DataAtualizacao))
+                    {
+                        porMes[cursor] = new PecaVendedorMetaMensalDto
+                        {
+                            Mes = cursor,
+                            ValorMeta = meta.ValorMeta
+                        };
+                    }
+
+                    cursor = cursor.AddMonths(1);
                 }
             }
+
+            return porMes.Values
+                .OrderBy(item => item.Mes)
+                .ToList();
+        }
+
+        private static bool MetaIntersects(PecaVendedorMeta meta, DateTime dataInicio, DateTime dataFim)
+        {
+            if (!meta.DataInicio.HasValue || !meta.DataFim.HasValue)
+                return false;
+
+            return meta.DataInicio.Value.Date <= dataFim.Date && meta.DataFim.Value.Date >= dataInicio.Date;
         }
 
         private async Task<PecaMetaResumoDto?> LoadMinhaMetaAsync(OracleConnection connection, string? cpfVendedor, object canal, DateTime filtroDataInicio, DateTime filtroDataFim)
@@ -969,6 +1076,32 @@ namespace UniFlowHub.Api.Services
                 .ToListAsync();
 
             return acessos.ToHashSet(StringComparer.OrdinalIgnoreCase);
+        }
+
+        private async Task<List<int>> GetPerfilEmpresasAsync(string role)
+        {
+            var perfil = PerfisService.NormalizePerfilName(role);
+            return await _context.PerfilSistema
+                .Where(p => p.Nome == perfil)
+                .SelectMany(p => p.Empresas.Select(e => e.EmpresaNumero))
+                .Distinct()
+                .OrderBy(empresa => empresa)
+                .ToListAsync();
+        }
+
+        private async Task<bool> CoversAllEmpresasAsync(IReadOnlyCollection<int> empresasPermitidas)
+        {
+            if (empresasPermitidas.Count == 0)
+                return false;
+
+            var empresasCadastradas = await _context.Empresa
+                .Select(empresa => empresa.Numero)
+                .Where(numero => numero > 0)
+                .Distinct()
+                .ToListAsync();
+
+            return empresasCadastradas.Count > 0
+                && empresasCadastradas.All(empresasPermitidas.Contains);
         }
 
         private async Task<List<int>> GetRevendasPermitidasAsync(IReadOnlyCollection<int> empresasPermitidas)

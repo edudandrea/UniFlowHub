@@ -400,6 +400,18 @@
       </label>
 
       <button class="secondary-button" type="button" (click)="clearDetailFilters()">Limpar pesquisa</button>
+      <button class="primary-button" type="button" (click)="printFilteredPdf()" [disabled]="!veiculosFiltrados().length">Imprimir PDF</button>
+    </div>
+
+    <div class="detail-totals">
+      <div>
+        <span>Total contÃ¡bil filtrado</span>
+        <strong>{{ formatMoney(custoTotalFiltrado()) }}</strong>
+      </div>
+      <div>
+        <span>Total de veÃ­culos filtrado</span>
+        <strong>{{ formatNumber(totalVeiculosFiltrado()) }}</strong>
+      </div>
     </div>
 
     <div class="table-wrap">

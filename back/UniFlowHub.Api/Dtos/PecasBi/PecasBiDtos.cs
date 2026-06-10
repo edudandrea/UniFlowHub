@@ -65,8 +65,25 @@ namespace UniFlowHub.Api.Dtos.PecasBi
         public int Pedidos { get; set; }
         public decimal ConversaoPercentual { get; set; }
         public decimal MetaVendas { get; set; }
+        public decimal MetaAtual { get; set; }
+        public decimal MetaMesAnterior { get; set; }
         public DateTime? MetaDataInicio { get; set; }
         public DateTime? MetaDataFim { get; set; }
+        public List<PecaVendaDiariaVendedorDto> VendasDiarias { get; set; } = new();
+        public List<PecaVendedorMetaMensalDto> MetasMensais { get; set; } = new();
+    }
+
+    public class PecaVendaDiariaVendedorDto
+    {
+        public DateTime Data { get; set; }
+        public decimal Faturamento { get; set; }
+        public int Pedidos { get; set; }
+    }
+
+    public class PecaVendedorMetaMensalDto
+    {
+        public DateTime Mes { get; set; }
+        public decimal ValorMeta { get; set; }
     }
 
     public class PecaCanalDto

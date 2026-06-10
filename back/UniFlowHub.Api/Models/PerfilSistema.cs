@@ -11,5 +11,6 @@ namespace UniFlowHub.Api.Models
         public string Nome { get; set; } = string.Empty;
         public bool PadraoSistema { get; set; }
         public ICollection<PerfilSistemaAcesso> Acessos { get; set; } = new List<PerfilSistemaAcesso>();
+        public ICollection<PerfilSistemaEmpresa> Empresas { get; set; } = new List<PerfilSistemaEmpresa>();
     }
 }

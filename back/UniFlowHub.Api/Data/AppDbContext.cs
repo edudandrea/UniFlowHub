@@ -30,6 +30,7 @@ namespace UniFlowHub.Api.Data
         public DbSet<PecaVendedorMeta> PecaVendedorMeta { get; set; }
         public DbSet<PerfilSistema> PerfilSistema { get; set; }
         public DbSet<PerfilSistemaAcesso> PerfilSistemaAcesso { get; set; }
+        public DbSet<PerfilSistemaEmpresa> PerfilSistemaEmpresa { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -143,7 +144,7 @@ namespace UniFlowHub.Api.Data
 
             modelBuilder.Entity<PecaVendedorMeta>()
                 .HasIndex(s => s.CpfVendedor)
-                .IsUnique();
+                .IsUnique(false);
 
             modelBuilder.Entity<PecaVendedorMeta>()
                 .HasOne(s => s.AtualizadoPorUser)
@@ -162,6 +163,16 @@ namespace UniFlowHub.Api.Data
             modelBuilder.Entity<PerfilSistemaAcesso>()
                 .HasOne(s => s.PerfilSistema)
                 .WithMany(s => s.Acessos)
+                .HasForeignKey(s => s.PerfilSistemaId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<PerfilSistemaEmpresa>()
+                .HasIndex(s => new { s.PerfilSistemaId, s.EmpresaNumero })
+                .IsUnique();
+
+            modelBuilder.Entity<PerfilSistemaEmpresa>()
+                .HasOne(s => s.PerfilSistema)
+                .WithMany(s => s.Empresas)
                 .HasForeignKey(s => s.PerfilSistemaId)
                 .OnDelete(DeleteBehavior.Cascade);
 

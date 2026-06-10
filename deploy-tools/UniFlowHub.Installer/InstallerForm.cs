@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.ComponentModel;
 using System.Drawing.Drawing2D;
+using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
@@ -747,6 +748,7 @@ public sealed class InstallerForm : Form
         }
 
         Log("Aplicando migrations pendentes...");
+        var migrationOutput = new StringBuilder();
         var startInfo = new ProcessStartInfo
         {
             FileName = exePath,
@@ -759,15 +761,41 @@ public sealed class InstallerForm : Form
         };
 
         using var process = Process.Start(startInfo) ?? throw new InvalidOperationException("Não foi possível iniciar UniFlowHub.exe --migrate.");
-        process.OutputDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) Log(e.Data); };
-        process.ErrorDataReceived += (_, e) => { if (!string.IsNullOrWhiteSpace(e.Data)) Log(e.Data); };
+        process.OutputDataReceived += (_, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Data))
+            {
+                return;
+            }
+
+            migrationOutput.AppendLine(e.Data);
+            Log(e.Data);
+        };
+        process.ErrorDataReceived += (_, e) =>
+        {
+            if (string.IsNullOrWhiteSpace(e.Data))
+            {
+                return;
+            }
+
+            migrationOutput.AppendLine(e.Data);
+            Log(e.Data);
+        };
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
         process.WaitForExit();
 
         if (process.ExitCode != 0)
         {
-            throw new InvalidOperationException("Falha ao aplicar migrations. Código: " + process.ExitCode);
+            var details = migrationOutput.ToString().Trim();
+            var message = "Falha ao aplicar migrations do banco interno PostgreSQL. Código: " + process.ExitCode;
+
+            if (!string.IsNullOrWhiteSpace(details))
+            {
+                message += Environment.NewLine + details;
+            }
+
+            throw new InvalidOperationException(message);
         }
 
         Log("Migrations aplicadas com sucesso.");
