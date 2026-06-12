@@ -33,25 +33,17 @@
     </div>
   </header>
 
-  <section class="page-title">
-    <div>
-      <span class="eyebrow">Dashboard</span>
+  <section class="filters">
+    <div class="filter-copy">
+      <p class="system-name">Comercial</p>
       <h2>Análise de SEMINOVOS e REPASSES</h2>
       <p>Resumo de custo contábil, situação e tempo em estoque por empresa e revenda.</p>
     </div>
-    <app-auto-refresh-control
-      storageKey="uniflowhub.autoRefresh.repasses"
-      [updatedAt]="atualizadoEm()"
-      [loading]="loading()"
-      (refresh)="loadDashboard()"
-    />
-  </section>
-
-  <div class="filters-panel">
+    <div class="filters-table">
     <label>
-      <span>Empresa</span>
+      Empresa
       <select [ngModel]="empresaSelecionada()" (ngModelChange)="empresaSelecionada.set($event); onEmpresaChange()">
-        <option [ngValue]="null">Todas as empresas</option>
+        <option [ngValue]="null">Todas</option>
         <option *ngFor="let empresa of empresasRepasse()" [ngValue]="empresa.numero">
           {{ empresa.numero }} - {{ empresa.nome }}
         </option>
@@ -59,7 +51,7 @@
     </label>
 
     <label>
-      <span>Revenda</span>
+      Revenda
       <select [ngModel]="revendaSelecionada()" (ngModelChange)="revendaSelecionada.set($event); onRevendaChange()">
         <option [ngValue]="null">Todas as revendas</option>
         <option *ngFor="let revenda of revendasFiltradas()" [ngValue]="revenda.numeroRevenda">
@@ -69,20 +61,26 @@
     </label>
 
     <label>
-      <span>Data de</span>
+      Data inicial
       <input type="date" [ngModel]="dataInicio()" (ngModelChange)="dataInicio.set($event); onDateChange()" />
     </label>
 
     <label>
-      <span>Data para</span>
+      Data final
       <input type="date" [ngModel]="dataFim()" (ngModelChange)="dataFim.set($event); onDateChange()" />
     </label>
 
-    <button type="button" class="ghost-button" (click)="clearFilters()">Limpar filtros</button>
-    <button type="button" class="primary-button" (click)="loadDashboard()" [disabled]="loading()">
-      {{ loading() ? 'Carregando...' : 'Atualizar' }}
+    <button type="button" class="primary-button filter-action" (click)="loadDashboard()" [disabled]="loading()">
+      {{ loading() ? 'Atualizando...' : 'Atualizar' }}
     </button>
-  </div>
+    <app-auto-refresh-control
+      storageKey="uniflowhub.autoRefresh.repasses"
+      [updatedAt]="atualizadoEm()"
+      [loading]="loading()"
+      (refresh)="loadDashboard()"
+    />
+    </div>
+  </section>
 
   <section class="kpi-grid">
     <article class="kpi-card">
@@ -289,6 +287,17 @@
             >
               <title>{{ slice.item.modelo }} - {{ slice.item.placa || 'Sem placa' }} - {{ slice.item.diasEstoque }} dias</title>
             </path>
+            <text
+              *ngFor="let slice of pieSlices()"
+              class="pie-percent"
+              [attr.x]="slice.labelX"
+              [attr.y]="slice.labelY"
+              [attr.transform]="sliceLabelTransform(slice)"
+              text-anchor="middle"
+              dominant-baseline="central"
+            >
+              {{ formatPercent(slice.percent) }}
+            </text>
           </svg>
           <div class="pie-hole">
             <span>{{ activeTopVehicle().diasEstoque }}</span>

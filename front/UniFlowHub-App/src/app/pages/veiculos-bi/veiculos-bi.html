@@ -4,7 +4,7 @@
       <img src="/uniflowhub-logo.png" alt="UniFlowHub" />
       <div>
         <p class="system-name">UniFlowHub</p>
-        <h1>B.I Venda de Veiculos</h1>
+        <h1>B.I Venda de Veículos</h1>
       </div>
     </button>
 
@@ -34,7 +34,7 @@
   <section class="filters">
     <div class="filter-copy">
       <p class="system-name">Comercial</p>
-      <h2>Performance por empresa, revenda, modelos, mix e metas de vendedores.</h2>
+      <h2>Visão executiva de performance, margem, mix, acessorios e F&I.</h2>
     </div>
     <div class="filters-table">
       <label>
@@ -83,11 +83,18 @@
     </div>
   </section>
 
+  <nav class="bi-tabs" role="tablist" aria-label="Areas do BI de venda de veiculos">
+    <button type="button" role="tab" [class.active]="activeTab() === 'veiculos'" (click)="setTab('veiculos')">Veiculos</button>
+    <button type="button" role="tab" [class.active]="activeTab() === 'acessorios'" (click)="setTab('acessorios')">Acessorios</button>
+    <button type="button" role="tab" [class.active]="activeTab() === 'retorno-fi'" (click)="setTab('retorno-fi')">Retornos F&I</button>
+  </nav>
+
+  @if (activeTab() === 'veiculos') {
   <section class="metrics">
     <article>
       <span>Realizado total</span>
       <strong>{{ formatNumber(unidadesTotal()) }}</strong>
-      <p>{{ formatPercent(atingimento()) }} da meta de novos e direta</p>
+      <p>{{ metaTotal() ? formatPercent(atingimento()) + ' da meta de novos e direta' : 'No periodo selecionado' }}</p>
     </article>
     <article>
       <span>Faturamento</span>
@@ -111,7 +118,7 @@
       <header>
         <div>
           <p class="system-name">Revendas</p>
-          <h2>Meta x realizado</h2>
+          <h2>Meta x Realizado</h2>
         </div>
         <span>Atualizado {{ atualizadoEm() | date: 'dd/MM/yyyy HH:mm' }}</span>
       </header>
@@ -125,10 +132,12 @@
             <div class="branch-tower">
               <span class="tower-meta" [style.height.%]="towerHeight(item.metaNovos + item.metaVendaDireta, maxFilial())"></span>
               <span class="tower-done" [style.height.%]="towerHeight(item.faturadosNovos + item.faturadosDireta, maxFilial())"></span>
+              <span class="tower-seminovos" [style.height.%]="towerHeight(item.seminovos, maxFilial())"></span>
             </div>
             <div class="branch-footer">
-              <span>{{ formatPercent(filialAtingimento(item)) }}</span>
-              <strong>{{ formatNumber(item.faturadosNovos + item.faturadosDireta) }} vendidos</strong>
+              <span>{{ formatPercent(filialAtingimento(item)) }} incluindo seminovos</span>
+              <strong>{{ formatNumber(item.faturadosNovos + item.faturadosDireta + item.seminovos) }} vendidos</strong>
+              <small>{{ formatNumber(item.faturadosNovos + item.faturadosDireta) }} novos/direta - {{ formatNumber(item.seminovos) }} seminovos</small>
             </div>
           </div>
         }
@@ -156,9 +165,9 @@
               >
                 <path class="donut-slice" [attr.d]="slicePath(mixRealizado(), index)" [style.fill]="slice.color"></path>
                 @if (slicePercent(mixRealizado(), slice.value) >= 7) {
-                  <text class="donut-percent" [attr.x]="sliceLabelX(mixRealizado(), index)" [attr.y]="sliceLabelY(mixRealizado(), index)" [attr.transform]="sliceLabelTransform(mixRealizado(), index)">
-                    {{ formatPercent(slicePercent(mixRealizado(), slice.value)) }}
-                  </text>
+                  <foreignObject [attr.x]="sliceLabelX(mixRealizado(), index) - 18" [attr.y]="sliceLabelY(mixRealizado(), index) - 9" width="36" height="18">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="donut-percent-html">{{ formatPercent(slicePercent(mixRealizado(), slice.value)) }}</div>
+                  </foreignObject>
                 }
               </g>
             }
@@ -179,7 +188,7 @@
     <article class="panel mix-panel">
       <header>
         <div>
-          <p class="system-name">Mix x realizado</p>
+          <p class="system-name">Mix x Realizado</p>
           <h2>Torre de meta contra entrega</h2>
         </div>
       </header>
@@ -307,9 +316,9 @@
               >
                 <path class="donut-slice" [attr.d]="slicePath(funilSlices(), index)" [style.fill]="slice.color"></path>
                 @if (slicePercent(funilSlices(), slice.value) >= 7) {
-                  <text class="donut-percent" [attr.x]="sliceLabelX(funilSlices(), index)" [attr.y]="sliceLabelY(funilSlices(), index)" [attr.transform]="sliceLabelTransform(funilSlices(), index)">
-                    {{ formatPercent(slicePercent(funilSlices(), slice.value)) }}
-                  </text>
+                  <foreignObject [attr.x]="sliceLabelX(funilSlices(), index) - 18" [attr.y]="sliceLabelY(funilSlices(), index) - 9" width="36" height="18">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="donut-percent-html">{{ formatPercent(slicePercent(funilSlices(), slice.value)) }}</div>
+                  </foreignObject>
                 }
               </g>
             }
@@ -324,42 +333,6 @@
             </div>
           }
         </div>
-      </div>
-    </article>
-
-    <article class="panel prep-panel">
-      <header>
-        <div>
-          <p class="system-name">Acessorios</p>
-          <h2>Area reservada</h2>
-        </div>
-      </header>
-      <div class="prep-grid">
-        @for (item of acessoriosPreparacao(); track item.titulo) {
-          <div>
-            <span>{{ item.indicador }}</span>
-            <strong>{{ item.titulo }}</strong>
-            <p>{{ item.descricao }}</p>
-          </div>
-        }
-      </div>
-    </article>
-
-    <article class="panel prep-panel">
-      <header>
-        <div>
-          <p class="system-name">Retorno financeiro</p>
-          <h2>Area reservada</h2>
-        </div>
-      </header>
-      <div class="prep-grid">
-        @for (item of financeiroPreparacao; track item.titulo) {
-          <div>
-            <span>{{ item.indicador }}</span>
-            <strong>{{ item.titulo }}</strong>
-            <p>{{ item.descricao }}</p>
-          </div>
-        }
       </div>
     </article>
 
@@ -410,4 +383,277 @@
       </div>
     </article>
   </section>
+  }
+
+  @if (activeTab() === 'acessorios') {
+  <section class="metrics">
+    <article>
+      <span>Faturamento acessorios</span>
+      <strong>{{ formatMoney(acessoriosFaturamentoTotal()) }}</strong>
+      <p>{{ formatNumber(acessoriosQuantidadeTotal()) }} itens no periodo</p>
+    </article>
+    <article>
+      <span>Rentabilidade</span>
+      <strong>{{ formatMoney(acessoriosRentabilidadeTotal()) }}</strong>
+      <p>{{ formatPercent(acessoriosMargemPercentual()) }} sobre vendas</p>
+    </article>
+    <article>
+      <span>Ticket medio</span>
+      <strong>{{ formatMoney(acessoriosTicketMedio()) }}</strong>
+      <p>Por item vendido</p>
+    </article>
+    <article>
+      <span>Itens ranqueados</span>
+      <strong>{{ formatNumber(acessorios().length) }}</strong>
+      <p>Departamento 7</p>
+    </article>
+  </section>
+
+  <section class="bi-grid accessories-grid">
+    <article class="panel revenue-panel">
+      <header>
+        <div>
+          <p class="system-name">Acessorios</p>
+          <h2>Top itens por faturamento</h2>
+        </div>
+        <span>Atualizado {{ atualizadoEm() | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </header>
+      <div class="accessory-bars">
+        @for (item of acessorios(); track item.codigo) {
+          <div>
+            <header>
+              <strong>{{ item.nome }}</strong>
+              <span>{{ item.codigo }} - {{ item.categoria }}</span>
+            </header>
+            <p><i [style.width.%]="percent(item.faturamento, maxAcessorioFaturamento())"></i></p>
+            <footer>
+              <span>{{ formatNumber(item.quantidade) }} itens</span>
+              <strong>{{ formatMoney(item.faturamento) }}</strong>
+            </footer>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel composition-panel">
+      <header>
+        <div>
+          <p class="system-name">Margem</p>
+          <h2>Composicao do periodo</h2>
+        </div>
+      </header>
+      <div class="margin-kpi">
+        <strong>{{ formatPercent(acessoriosMargemPercentual()) }}</strong>
+        <span>{{ formatMoney(acessoriosRentabilidadeTotal()) }} de rentabilidade sobre {{ formatMoney(acessoriosFaturamentoTotal()) }}</span>
+      </div>
+      <div class="prep-grid">
+        @for (item of acessoriosPreparacao(); track item.titulo) {
+          <div>
+            <span>{{ item.indicador }}</span>
+            <strong>{{ item.titulo }}</strong>
+            <p>{{ item.descricao }}</p>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel table-panel">
+      <header>
+        <div>
+          <p class="system-name">Detalhamento</p>
+          <h2>Acessorios vendidos</h2>
+        </div>
+      </header>
+      <div class="table-scroll">
+        <table>
+          <thead>
+            <tr>
+              <th>Codigo</th>
+              <th>Acessorio</th>
+              <th>Categoria</th>
+              <th>Quantidade</th>
+              <th>Faturamento</th>
+              <th>Rentabilidade</th>
+              <th>Margem</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of acessorios(); track item.codigo) {
+              <tr>
+                <td>{{ item.codigo }}</td>
+                <td><strong>{{ item.nome }}</strong></td>
+                <td>{{ item.categoria }}</td>
+                <td>{{ formatNumber(item.quantidade) }}</td>
+                <td>{{ formatMoney(item.faturamento) }}</td>
+                <td>{{ formatMoney(item.rentabilidade) }}</td>
+                <td>{{ formatPercent(item.margemPercentual) }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </article>
+  </section>
+  }
+
+  @if (activeTab() === 'retorno-fi') {
+  <section class="metrics">
+    <article>
+      <span>Retorno F&I</span>
+      <strong>{{ formatMoney(retornoTotal()) }}</strong>
+      <p>{{ formatNumber(retornoContratos()) }} contratos no periodo</p>
+    </article>
+    <article>
+      <span>Valor financiado</span>
+      <strong>{{ formatMoney(retornoValorFinanciado()) }}</strong>
+      <p>{{ formatPercent(retornoSobreVenda()) }} sobre valor de venda</p>
+    </article>
+    <article>
+      <span>Ticket retorno</span>
+      <strong>{{ formatMoney(retornoTicketMedio()) }}</strong>
+      <p>{{ formatPercent(retornoSobreFinanciado()) }} sobre financiado</p>
+    </article>
+    <article>
+      <span>Comissao</span>
+      <strong>{{ formatMoney(retornoComissaoTotal()) }}</strong>
+      <p>Receita de comissao informada</p>
+    </article>
+  </section>
+
+  <section class="bi-grid fi-grid">
+    <article class="panel revenue-panel">
+      <header>
+        <div>
+          <p class="system-name">Financeiras</p>
+          <h2>Retorno por financeira</h2>
+        </div>
+        <span>Atualizado {{ retornoFi()?.atualizadoEm | date: 'dd/MM/yyyy HH:mm' }}</span>
+      </header>
+      <div class="accessory-bars fi-bars">
+        @for (item of retornoFi()?.financeiras ?? []; track item.nome) {
+          <div>
+            <header>
+              <strong>{{ item.nome }}</strong>
+              <span>{{ formatNumber(item.quantidade) }} contratos</span>
+            </header>
+            <p><i [style.width.%]="percent(item.retorno, maxRetornoFinanceira())"></i></p>
+            <footer>
+              <span>{{ formatPercent(retornoPercentual(item)) }} do financiado</span>
+              <strong>{{ formatMoney(item.retorno) }}</strong>
+            </footer>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel">
+      <header>
+        <div>
+          <p class="system-name">Vendedores</p>
+          <h2>Ranking de retorno</h2>
+        </div>
+      </header>
+      <div class="seller-list">
+        @for (item of retornoFi()?.vendedores ?? []; track item.nome) {
+          <div>
+            <header>
+              <strong>{{ item.nome }}</strong>
+              <span>{{ formatNumber(item.quantidade) }} contratos</span>
+            </header>
+            <p><i [style.width.%]="percent(item.retorno, maxRetornoVendedor())"></i></p>
+            <footer>
+              <span>{{ formatMoney(item.valorFinanciado) }} financiado</span>
+              <strong>{{ formatMoney(item.retorno) }}</strong>
+            </footer>
+          </div>
+        }
+      </div>
+    </article>
+
+    <article class="panel composition-panel fi-chart-card">
+      <header>
+        <div>
+          <p class="system-name">Composicao</p>
+          <h2>Financiado x retorno</h2>
+        </div>
+      </header>
+      <div class="pie-layout" (mouseleave)="hoveredSlice.set('')">
+        <div class="donut">
+          <svg class="pie-chart" viewBox="0 0 120 120" role="img" aria-label="Financeiro x retorno">
+            <circle class="donut-base" cx="60" cy="60" r="47"></circle>
+            @for (slice of retornoFinanceiroSlices(); track slice.label; let index = $index) {
+              <g
+                class="donut-segment"
+                [attr.transform]="sliceTransform(retornoFinanceiroSlices(), index, 'fi-fin-' + index)"
+                (mouseenter)="hoveredSlice.set('fi-fin-' + index)"
+                (focus)="hoveredSlice.set('fi-fin-' + index)"
+                tabindex="0"
+              >
+                <path class="donut-slice" [attr.d]="slicePath(retornoFinanceiroSlices(), index)" [style.fill]="slice.color"></path>
+                @if (slicePercent(retornoFinanceiroSlices(), slice.value) >= 7) {
+                  <foreignObject [attr.x]="sliceLabelX(retornoFinanceiroSlices(), index) - 18" [attr.y]="sliceLabelY(retornoFinanceiroSlices(), index) - 9" width="36" height="18">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="donut-percent-html">{{ formatPercent(slicePercent(retornoFinanceiroSlices(), slice.value)) }}</div>
+                  </foreignObject>
+                }
+              </g>
+            }
+          </svg>
+        </div>
+        <div class="legend-list">
+          <div><i style="background:#16a34a"></i><span>Retorno</span><strong>{{ formatMoney(retornoTotal()) }}</strong></div>
+          <div><i style="background:#2563eb"></i><span>Financiado</span><strong>{{ formatMoney(retornoValorFinanciado()) }}</strong></div>
+          <div><i style="background:#64748b"></i><span>Venda</span><strong>{{ formatMoney(retornoValorVenda()) }}</strong></div>
+        </div>
+      </div>
+    </article>
+
+    <article class="panel fi-chart-card">
+      <header>
+        <div>
+          <p class="system-name">Parcelas</p>
+          <h2>Distribuicao dos contratos</h2>
+        </div>
+      </header>
+      <div class="pie-layout" (mouseleave)="hoveredSlice.set('')">
+        <div class="donut">
+          <svg class="pie-chart" viewBox="0 0 120 120" role="img" aria-label="Distribuicao de contratos por parcelas">
+            <circle class="donut-base" cx="60" cy="60" r="47"></circle>
+            @for (slice of retornoParcelasSlices(); track slice.label; let index = $index) {
+              <g
+                class="donut-segment"
+                [attr.transform]="sliceTransform(retornoParcelasSlices(), index, 'fi-parc-' + index)"
+                (mouseenter)="hoveredSlice.set('fi-parc-' + index)"
+                (focus)="hoveredSlice.set('fi-parc-' + index)"
+                tabindex="0"
+              >
+                <path class="donut-slice" [attr.d]="slicePath(retornoParcelasSlices(), index)" [style.fill]="slice.color"></path>
+                @if (slicePercent(retornoParcelasSlices(), slice.value) >= 7) {
+                  <foreignObject [attr.x]="sliceLabelX(retornoParcelasSlices(), index) - 18" [attr.y]="sliceLabelY(retornoParcelasSlices(), index) - 9" width="36" height="18">
+                    <div xmlns="http://www.w3.org/1999/xhtml" class="donut-percent-html">{{ formatPercent(slicePercent(retornoParcelasSlices(), slice.value)) }}</div>
+                  </foreignObject>
+                }
+              </g>
+            }
+          </svg>
+        </div>
+        <div class="legend-list">
+          @for (slice of retornoParcelasSlices(); track slice.label) {
+            <div>
+              <i [style.background]="slice.color"></i>
+              <span>{{ slice.label }}</span>
+              <strong>{{ formatNumber(slice.value) }}</strong>
+            </div>
+          }
+          @if (!retornoParcelasSlices().length) {
+            <div>
+              <i style="background:#cbd5e1"></i>
+              <span>Sem contratos</span>
+              <strong>0</strong>
+            </div>
+          }
+        </div>
+      </div>
+    </article>
+  </section>
+  }
 </main>

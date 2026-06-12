@@ -148,6 +148,30 @@ h1 {
   padding: 24px;
 }
 
+.list-panel > * {
+  order: 20;
+}
+
+.list-panel > .section-heading {
+  order: 1;
+}
+
+.list-panel > .filter-field {
+  order: 2;
+}
+
+.list-panel > .top-queue-tabs {
+  order: 3;
+}
+
+.list-panel > .request-list {
+  order: 4;
+}
+
+.list-panel > .pagination-controls {
+  order: 5;
+}
+
 .admin-form,
 .communication-panel,
 .message-form,
@@ -315,10 +339,51 @@ textarea {
 }
 
 .filter-field input {
-  padding-left: 40px;
+  padding-left: 42px;
+  border-color: color-mix(in srgb, var(--color-brand-blue) 24%, var(--color-border));
   background:
-    linear-gradient(transparent, transparent),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-brand-blue) 12%, transparent), transparent 46px),
     var(--color-field);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--color-surface) 60%, transparent);
+}
+
+.filter-field {
+  position: relative;
+}
+
+.filter-field::after {
+  content: "";
+  position: absolute;
+  left: 15px;
+  bottom: 14px;
+  width: 13px;
+  height: 13px;
+  border: 2px solid var(--color-brand-blue);
+  border-radius: 999px;
+  box-shadow: 7px 7px 0 -5px var(--color-brand-blue);
+  opacity: 0.82;
+}
+
+.queue-filter-grid {
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+}
+
+.queue-filter-grid label {
+  min-width: min(100%, 220px);
+}
+
+.top-queue-tabs {
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-card-alt);
+}
+
+.legacy-bottom-tabs {
+  display: none;
 }
 
 .date-filters {
@@ -468,6 +533,59 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.info-card-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.info-card-heading small {
+  color: var(--color-muted);
+  font-weight: 800;
+  overflow-wrap: anywhere;
+}
+
+.equipment-card {
+  border-color: color-mix(in srgb, var(--color-brand-blue) 24%, var(--color-border));
+  background:
+    linear-gradient(90deg, color-mix(in srgb, var(--color-brand-blue) 8%, transparent), transparent 58%),
+    var(--color-card-alt);
+}
+
+.equipment-meta {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.equipment-meta span {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+  overflow-wrap: anywhere;
+}
+
+.equipment-meta strong {
+  color: var(--color-brand-blue);
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.remote-device-info {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface);
+}
+
 .satisfaction-view > div {
   display: flex;
   flex-wrap: wrap;
@@ -600,5 +718,9 @@ textarea {
 
   .message-card {
     max-width: 100%;
+  }
+
+  .equipment-meta {
+    grid-template-columns: 1fr;
   }
 }

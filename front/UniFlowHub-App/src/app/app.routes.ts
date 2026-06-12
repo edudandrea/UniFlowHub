@@ -11,7 +11,6 @@ import { HubPage } from './pages/hub/hub';
 import { LoginPage } from './pages/login/login';
 import { PecasBiPage } from './pages/pecas-bi/pecas-bi';
 import { SolicitacoesPage } from './pages/solicitacoes/solicitacoes';
-import { TiPage } from './pages/ti/ti';
 import { UsuariosPage } from './pages/usuarios/usuarios';
 import { VeiculosComponent } from './pages/veiculos/veiculos.component';
 import { VeiculosBiPage } from './pages/veiculos-bi/veiculos-bi';
@@ -61,7 +60,7 @@ export const routes: Routes = [
   },
   {
     path: 'ti',
-    component: TiPage,
+    loadComponent: () => import('./pages/ti/ti').then((m) => m.TiPage),
     canActivate: [accessGuard(['ti'])],
   },
   {
@@ -73,6 +72,11 @@ export const routes: Routes = [
     path: 'ti/base-conhecimento',
     component: BaseConhecimentoTIPage,
     canActivate: [accessGuard(['base-conhecimento-ti'])],
+  },
+  {
+    path: 'ti/monitoramento',
+    loadComponent: () => import('./pages/monitoramento/monitoramento.component').then((m) => m.MonitoramentoComponent),
+    canActivate: [accessGuard(['ti-admin'])],
   },
   {
     path: 'compras',

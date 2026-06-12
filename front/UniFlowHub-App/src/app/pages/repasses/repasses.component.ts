@@ -25,6 +25,9 @@ interface PieSlice {
   color: string;
   path: string;
   percent: number;
+  labelX: number;
+  labelY: number;
+  midAngle: number;
 }
 
 const REPASSE_EMPRESAS = new Map<number, string>([
@@ -161,6 +164,8 @@ export class RepassesComponent implements OnInit {
       const value = Math.max(item.diasEstoque, 0);
       const startAngle = cursor;
       const endAngle = cursor + (value / total) * 360;
+      const midAngle = startAngle + (endAngle - startAngle) / 2;
+      const label = this.polarToCartesian(50, 50, 27, midAngle);
       cursor = endAngle;
 
       return {
@@ -169,6 +174,9 @@ export class RepassesComponent implements OnInit {
         color: this.legendColor(index),
         path: this.describeArc(50, 50, 45, startAngle, endAngle),
         percent: (value / total) * 100,
+        labelX: label.x,
+        labelY: label.y,
+        midAngle,
       };
     });
   });
@@ -361,7 +369,7 @@ export class RepassesComponent implements OnInit {
   }
 
   legendColor(index: number): string {
-    return ['#134e4a', '#2563eb', '#b45309', '#7c3aed', '#be123c'][index] ?? '#64748b';
+    return ['#2563eb', '#16a34a', '#f59e0b', '#14b8a6', '#7c3aed'][index] ?? '#64748b';
   }
 
   setHoveredTop(index: number | null): void {
@@ -381,9 +389,17 @@ export class RepassesComponent implements OnInit {
     return new Intl.NumberFormat('pt-BR', { maximumFractionDigits: 0 }).format(value);
   }
 
+  formatPercent(value: number): string {
+    return `${value.toLocaleString('pt-BR', { maximumFractionDigits: 1 })}%`;
+  }
+
   formatSignedMoney(value: number): string {
     const formatted = this.formatMoney(Math.abs(value));
     return value < 0 ? `-${formatted}` : formatted;
+  }
+
+  sliceLabelTransform(slice: PieSlice): string {
+    return `rotate(${slice.midAngle} ${slice.labelX} ${slice.labelY})`;
   }
 
   trackByVehicle(_: number, item: RepasseVeiculo): string {

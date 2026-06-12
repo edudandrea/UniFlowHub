@@ -98,6 +98,31 @@
         />
       </label>
 
+      @if (canManage()) {
+        <div class="tabs queue-tabs top-queue-tabs" role="tablist" aria-label="Filtros de chamados de TI">
+          <button
+            type="button"
+            [class.active]="activeTab() === 'pendentes'"
+            (click)="setTab('pendentes')"
+          >
+            Pendentes
+          </button>
+          <button type="button" [class.active]="activeTab() === 'meus'" (click)="setTab('meus')">
+            Meus chamados
+          </button>
+          <button type="button" [class.active]="activeTab() === 'todos'" (click)="setTab('todos')">
+            Todos
+          </button>
+          <button
+            type="button"
+            [class.active]="activeTab() === 'concluidos'"
+            (click)="setTab('concluidos')"
+          >
+            Concluidos
+          </button>
+        </div>
+      }
+
       <div class="date-filters">
         <label>
           De
@@ -131,6 +156,20 @@
         <button class="secondary" type="button" (click)="setSort(sortField())">
           {{ sortDirection() === 'asc' ? 'Crescente' : 'Decrescente' }}
         </button>
+      </div>
+
+      <div class="date-filters queue-filter-grid">
+        <label>
+          Responsavel
+          <select [value]="responsibleFilter()" (change)="setResponsibleFilter($any($event.target).value)">
+            <option value="">Todos</option>
+            <option value="Sem responsavel">Sem responsavel</option>
+            @for (responsavel of responsavelOptions(); track responsavel) {
+              <option [value]="responsavel">{{ responsavel }}</option>
+            }
+          </select>
+        </label>
+        <button class="secondary" type="button" (click)="clearQueueFilters()">Limpar filtros</button>
       </div>
 
       @if (createdTicketNumber()) {
@@ -190,7 +229,7 @@
           </div>
         </section>
 
-        <div class="tabs" role="tablist" aria-label="Filtros de chamados de TI">
+        <div class="tabs legacy-bottom-tabs" role="tablist" aria-label="Filtros de chamados de TI">
           <button
             type="button"
             [class.active]="activeTab() === 'pendentes'"
@@ -302,7 +341,7 @@
         }
       </div>
       @if (filteredChamados().length > pageSize()) {
-        <div class="date-filters">
+        <div class="date-filters pagination-controls">
           <button class="secondary" type="button" (click)="previousPage()" [disabled]="page() <= 1">
             Anterior
           </button>
@@ -882,6 +921,26 @@
                         {{ selected()?.dataEncerramento | date: 'dd/MM/yyyy HH:mm' }}</span
                       >
                     }
+                    <section class="closure-notes equipment-card readonly-equipment-card">
+                      <div class="info-card-heading">
+                        <strong>Equipamento que abriu o chamado</strong>
+                        <small>{{ equipmentSummary() }}</small>
+                      </div>
+                      <div class="ticket-dates equipment-meta">
+                        <span>
+                          <strong>Computador</strong>
+                          {{ selected()?.equipamentoNome || 'Nao informado pelo navegador' }}
+                        </span>
+                        <span>
+                          <strong>IP capturado</strong>
+                          {{ selected()?.equipamentoIp || 'Nao identificado' }}
+                        </span>
+                        <span>
+                          <strong>Sistema operacional</strong>
+                          {{ selected()?.equipamentoSistemaOperacional || 'Nao identificado' }}
+                        </span>
+                      </div>
+                    </section>
                     <p>{{ selected()?.descricao }}</p>
                     @if (selected()?.observacoes) {
                       <span>Observações: {{ selected()?.observacoes }}</span>

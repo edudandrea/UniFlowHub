@@ -1,7 +1,7 @@
 param(
     [string]$TargetPath,
-    [string]$SiteName = "DrFlowHub",
-    [string]$AppPoolName = "DrFlowHub",
+    [string]$SiteName = "UniFlowHub",
+    [string]$AppPoolName = "UniFlowHub",
     [switch]$SkipIisRestart
 )
 

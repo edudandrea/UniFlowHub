@@ -45,15 +45,15 @@ namespace UniFlowHub.Api.Services
                         + COALESCE(FMI.VAL_FRETE, 0)
                     ) AS FATURAMENTO,
                     SUM(
-                        (COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100)
+                        ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
                         + COALESCE(FMI.VAL_ICMS_PARTIL_UF_DEST, 0)
                         + COALESCE(FMI.DIFERENCA_ICMS_REDUZIDO, 0)
                         + COALESCE(FMI.VAL_PIS, 0)
                         + COALESCE(FMI.VAL_COFINS, 0)
-                        + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
+                        + COALESCE(FMI.VAL_IPI, 0)
                     ) AS DESPESAS_RENTABILIDADE,
                     SUM(
-                        (COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100)
+                        ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
                         + COALESCE(FMI.VAL_ICMS_RETIDO, 0)
                         + COALESCE(FMI.VAL_IPI, 0)
                         + COALESCE(FMI.VAL_PIS, 0)
@@ -152,35 +152,9 @@ namespace UniFlowHub.Api.Services
                 )
                   AND FMC.STATUS = 'F'
                   AND (
-                      TT.TIPO = 'E'
-                      OR TT.TIPO_TRANSACAO IN (
-                          'C01', 'C02', 'C10', 'C20', 'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C30', 'C50',
-                          'F21', 'F30', 'G21', 'G25', 'G55', 'I21', 'I24', 'I50', 'I51', 'L21', 'L23', 'L25',
-                          'L26', 'L29', 'L30', 'L32', 'L34', 'L35', 'L36', 'L38', 'L39', 'L40', 'L50', 'L52',
-                          'L54', 'L56', 'M21', 'M27', 'M61', 'O20', 'O21', 'O24', 'O26', 'O31', 'P13', 'P20',
-                          'P21', 'P23', 'P24', 'P25', 'P28', 'P30', 'P31', 'P32', 'P34', 'P40', 'P41', 'P43',
-                          'P44', 'P45', 'P46', 'P50', 'P51', 'P52', 'P53', 'P56', 'P58', 'P69', 'P71', 'R23',
-                          'R32', 'T21', 'T23', 'T24', 'T26', 'T28', 'T29', 'T30', 'T31', 'T32', 'T33', 'T34',
-                          'T35', 'U21', 'U23', 'U24', 'V21', 'V24', 'V25', 'V51', 'V52', 'V55', 'V58', 'V70',
-                          'V98', 'V99'
-                      )
-                  )
-                  AND (
                       (TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO = 'N')
                       OR (TT.TIPO = 'E' AND TT.SUBTIPO_TRANSACAO = 'D' AND FMC.FATOPERACAO_ORIGINAL IS NOT NULL)
                   )
-                  AND CASE
-                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
-                        ELSE FMC.TIPO_TRANSACAO
-                     END <> 'O21'
-                  AND (
-                      CASE
-                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
-                        ELSE FMC.TIPO_TRANSACAO
-                      END NOT IN ('G21', 'P71')
-                      OR FMC.EMPRESA = 5
-                  )
-                  AND COALESCE(FMC.NFE_SITUACAO, ' ') <> 'D'
                   AND FMC.DTA_ENTRADA_SAIDA BETWEEN :DATA_INICIO AND :DATA_FIM
                   AND (:EMPRESA IS NULL OR INSTR(',' || :EMPRESA || ',', ',' || TO_CHAR(FMC.EMPRESA) || ',') > 0)
                   AND (:REVENDA IS NULL OR INSTR(',' || :REVENDA || ',', ',' || TO_CHAR(FMC.REVENDA) || ',') > 0)
@@ -412,12 +386,12 @@ namespace UniFlowHub.Api.Services
                                         ELSE 1
                                     END * (
                                         COALESCE(FMI.VAL_CUSTO_MEDIO, 0)
-                                        + (COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100)
+                                        + ((COALESCE(FMI.BASE_ICMS, 0) * COALESCE(FMI.ALIQUOTA_ICMS, 0) / 100) - COALESCE(FMI.VAL_ICMS_DIFERIDO, 0))
                                         + COALESCE(FMI.VAL_ICMS_PARTIL_UF_DEST, 0)
                                         + COALESCE(FMI.DIFERENCA_ICMS_REDUZIDO, 0)
                                         + COALESCE(FMI.VAL_PIS, 0)
                                         + COALESCE(FMI.VAL_COFINS, 0)
-                                        + COALESCE(FMI.VAL_DESPESA_RENTABILIDADE, 0)
+                                        + COALESCE(FMI.VAL_IPI, 0)
                                     )
                                 )
                             )
@@ -452,40 +426,14 @@ namespace UniFlowHub.Api.Services
                  AND FMCORI.FATOPERACAO = FMC.FATOPERACAO_ORIGINAL
                 WHERE (
                     TO_CHAR(FMC.DEPARTAMENTO) = '3'
-                    OR (FMC.EMPRESA = 5 AND TO_CHAR(FMC.DEPARTAMENTO) IN ('11', '12'))
+                  OR (FMC.EMPRESA = 5 AND TO_CHAR(FMC.DEPARTAMENTO) IN ('11', '12'))
                 )
                   AND FMC.STATUS = 'F'
-                  AND (
-                      TT.TIPO = 'E'
-                      OR TT.TIPO_TRANSACAO IN (
-                          'C01', 'C02', 'C10', 'C20', 'C21', 'C22', 'C23', 'C24', 'C25', 'C26', 'C30', 'C50',
-                          'F21', 'F30', 'G21', 'G25', 'G55', 'I21', 'I24', 'I50', 'I51', 'L21', 'L23', 'L25',
-                          'L26', 'L29', 'L30', 'L32', 'L34', 'L35', 'L36', 'L38', 'L39', 'L40', 'L50', 'L52',
-                          'L54', 'L56', 'M21', 'M27', 'M61', 'O20', 'O21', 'O24', 'O26', 'O31', 'P13', 'P20',
-                          'P21', 'P23', 'P24', 'P25', 'P28', 'P30', 'P31', 'P32', 'P34', 'P40', 'P41', 'P43',
-                          'P44', 'P45', 'P46', 'P50', 'P51', 'P52', 'P53', 'P56', 'P58', 'P69', 'P71', 'R23',
-                          'R32', 'T21', 'T23', 'T24', 'T26', 'T28', 'T29', 'T30', 'T31', 'T32', 'T33', 'T34',
-                          'T35', 'U21', 'U23', 'U24', 'V21', 'V24', 'V25', 'V51', 'V52', 'V55', 'V58', 'V70',
-                          'V98', 'V99'
-                      )
-                  )
                   AND (
                       (TT.TIPO = 'S' AND TT.SUBTIPO_TRANSACAO = 'N')
                       OR (TT.TIPO = 'E' AND TT.SUBTIPO_TRANSACAO = 'D' AND FMC.FATOPERACAO_ORIGINAL IS NOT NULL)
                   )
-                  AND CASE
-                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
-                        ELSE FMC.TIPO_TRANSACAO
-                     END <> 'O21'
-                  AND (
-                      CASE
-                        WHEN TT.TIPO = 'E' THEN COALESCE(FMCORI.TIPO_TRANSACAO, FMC.TIPO_TRANSACAO)
-                        ELSE FMC.TIPO_TRANSACAO
-                      END NOT IN ('G21', 'P71')
-                      OR FMC.EMPRESA = 5
-                  )
                   AND PIE.TIPO_INDUSTRIALIZACAO IS NULL
-                  AND COALESCE(FMC.NFE_SITUACAO, ' ') <> 'D'
                   AND FMC.DTA_ENTRADA_SAIDA BETWEEN :DATA_INICIO AND :DATA_FIM
                   AND (:EMPRESA IS NULL OR INSTR(',' || :EMPRESA || ',', ',' || TO_CHAR(FMC.EMPRESA) || ',') > 0)
                   AND (:REVENDA IS NULL OR INSTR(',' || :REVENDA || ',', ',' || TO_CHAR(FMC.REVENDA) || ',') > 0)

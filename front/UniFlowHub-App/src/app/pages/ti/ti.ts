@@ -73,6 +73,7 @@ export class TiPage implements OnInit, OnDestroy {
   readonly activeTab = signal<TiTab>('pendentes');
   readonly detailTab = signal<'detalhes' | 'comunicacao'>('detalhes');
   readonly filterTerm = signal('');
+  readonly responsibleFilter = signal('');
   readonly dateFrom = signal('');
   readonly dateTo = signal('');
   readonly reportDateFrom = signal('');
@@ -118,6 +119,7 @@ export class TiPage implements OnInit, OnDestroy {
     }
 
     const term = this.normalize(this.filterTerm());
+    const responsible = this.normalize(this.responsibleFilter());
     const from = this.parseDateFilter(this.dateFrom(), false);
     const to = this.parseDateFilter(this.dateTo(), true);
     const isConcluidosTab = this.canManage() && this.activeTab() === 'concluidos';
@@ -125,10 +127,11 @@ export class TiPage implements OnInit, OnDestroy {
     const filtered = items.filter((item) => {
       const itemDate = this.getFilterDate(item, isConcluidosTab);
       const matchesTerm = !term || this.matchesFilter(item, term);
+      const matchesResponsible = !responsible || this.normalize(item.responsavel || 'Sem responsavel') === responsible;
       const matchesFrom = !from || itemDate >= from;
       const matchesTo = !to || itemDate <= to;
 
-      return matchesTerm && matchesFrom && matchesTo;
+      return matchesTerm && matchesResponsible && matchesFrom && matchesTo;
     });
 
     return this.sortItems(filtered);
@@ -304,6 +307,25 @@ export class TiPage implements OnInit, OnDestroy {
 
   setFilter(value: string): void {
     this.filterTerm.set(value);
+    this.syncSelectionWithFilters();
+  }
+
+  setResponsibleFilter(value: string): void {
+    this.responsibleFilter.set(value);
+    this.page.set(1);
+    this.syncSelectionWithFilters();
+  }
+
+  clearQueueFilters(): void {
+    this.filterTerm.set('');
+    this.responsibleFilter.set('');
+    this.dateFrom.set('');
+    this.dateTo.set('');
+    this.page.set(1);
+    this.syncSelectionWithFilters();
+  }
+
+  private syncSelectionWithFilters(): void {
     const selected = this.selected();
     if (selected && !this.filteredChamados().some((item) => item.id === selected.id)) {
       const first = this.filteredChamados()[0] ?? null;
@@ -318,7 +340,16 @@ export class TiPage implements OnInit, OnDestroy {
   clearDateFilters(): void {
     this.dateFrom.set('');
     this.dateTo.set('');
+    this.page.set(1);
+    this.syncSelectionWithFilters();
   }
+
+  readonly responsavelOptions = computed(() => {
+    const names = this.chamados()
+      .map((item) => item.responsavel?.trim())
+      .filter((name): name is string => !!name);
+    return Array.from(new Set(names)).sort((a, b) => a.localeCompare(b, 'pt-BR', { sensitivity: 'base' }));
+  });
 
   completedSearchHint(): string {
     if (!this.canManage() || this.activeTab() !== 'concluidos') {

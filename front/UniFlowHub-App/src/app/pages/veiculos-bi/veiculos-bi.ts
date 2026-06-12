@@ -2,13 +2,14 @@ import { DatePipe, isPlatformBrowser } from '@angular/common';
 import { Component, HostListener, OnInit, PLATFORM_ID, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { NgxSpinnerService } from 'ngx-spinner';
+import { ToastrService } from 'ngx-toastr';
 import { AutoRefreshControlComponent } from '../../core/auto-refresh-control.component';
 import { AuthService } from '../../core/auth.service';
 import { Empresa, Unidade } from '../../core/models';
 import { ProfileFlowService } from '../../core/profile-flow.service';
 import { ThemeService } from '../../core/theme.service';
 import { UnidadesService } from '../../core/unidades.service';
-import { VeiculoAcessorioRanking, VeiculosBiService } from '../../core/veiculos-bi.service';
+import { VeiculoAcessorioRanking, VeiculosBiDashboard, VeiculosBiRetornoFiDashboard, VeiculosBiRetornoFiGrupo, VeiculosBiService } from '../../core/veiculos-bi.service';
 
 interface FilialVenda {
   empresaNumero: number;
@@ -63,6 +64,8 @@ interface PreparacaoBloco {
   indicador: string;
 }
 
+type VeiculosBiTab = 'veiculos' | 'acessorios' | 'retorno-fi';
+
 @Component({
   selector: 'app-veiculos-bi',
   imports: [DatePipe, AutoRefreshControlComponent],
@@ -73,20 +76,23 @@ export class VeiculosBiPage implements OnInit {
   private readonly auth = inject(AuthService);
   private readonly router = inject(Router);
   private readonly spinner = inject(NgxSpinnerService);
+  private readonly toastr = inject(ToastrService);
   private readonly profileFlow = inject(ProfileFlowService);
   private readonly unidadesService = inject(UnidadesService);
   private readonly veiculosBiService = inject(VeiculosBiService);
   private readonly isBrowser = isPlatformBrowser(inject(PLATFORM_ID));
 
+  readonly Math = Math;
   readonly theme = inject(ThemeService);
   readonly user = computed(() => this.auth.user());
   readonly profileMenuOpen = signal(false);
   readonly revendaPickerOpen = signal(false);
   readonly hoveredSlice = signal('');
   readonly loading = signal(false);
+  readonly activeTab = signal<VeiculosBiTab>('veiculos');
   readonly atualizadoEm = signal(new Date().toISOString());
-  readonly dataInicio = signal('2026-05-01');
-  readonly dataFim = signal('2026-05-31');
+  readonly dataInicio = signal(this.defaultStartDate());
+  readonly dataFim = signal(this.defaultEndDate());
   readonly empresaNumero = signal<number | null>(null);
   readonly revendasSelecionadas = signal<number[]>([]);
   readonly vendasPeriodoPage = signal(1);
@@ -99,6 +105,7 @@ export class VeiculosBiPage implements OnInit {
   readonly modelos = signal<ModeloRanking[]>([]);
   readonly vendedores = signal<VendedorMeta[]>([]);
   readonly acessorios = signal<VeiculoAcessorioRanking[]>([]);
+  readonly retornoFi = signal<VeiculosBiRetornoFiDashboard | null>(null);
 
   readonly acessoriosPreparacao = computed<PreparacaoBloco[]>(() => {
     const acessorios = this.acessorios();
@@ -174,7 +181,7 @@ export class VeiculosBiPage implements OnInit {
   readonly funilSlices = computed<ChartSlice[]>(() => [
     { label: 'Propostas', value: this.propostasTotal(), color: '#2563eb' },
     { label: 'Baixados', value: this.baixadosTotal(), color: '#14b8a6' },
-    { label: 'Faturados', value: this.unidadesTotal(), color: '#16a34a' },
+    { label: 'Realizado', value: this.unidadesTotal(), color: '#16a34a' },
   ]);
   readonly entregasPies = computed(() => this.vendasDiariasFiltradas().slice(-6).map((item) => ({
     ...item,
@@ -192,7 +199,10 @@ export class VeiculosBiPage implements OnInit {
       .filter((item) => !revendas.size || revendas.has(item.filial))
       .sort((a, b) => (b.realizado / Math.max(b.meta, 1)) - (a.realizado / Math.max(a.meta, 1)));
   });
-  readonly maxFilial = computed(() => Math.max(...this.vendasFiltradas().map((item) => item.metaNovos + item.metaVendaDireta), 1));
+  readonly maxFilial = computed(() => Math.max(...this.vendasFiltradas().flatMap((item) => [
+    item.metaNovos + item.metaVendaDireta,
+    item.faturadosNovos + item.faturadosDireta + item.seminovos,
+  ]), 1));
   readonly maxModelo = computed(() => Math.max(...this.topModelos().map((item) => item.unidades), 1));
   readonly maxMixTower = computed(() => Math.max(...this.mixTower().flatMap((item) => [item.meta, item.realizado]), 1));
   readonly vendasPeriodoTotalPages = computed(() => Math.max(1, Math.ceil(this.vendasFiltradas().length / this.vendasPeriodoPageSize)));
@@ -206,6 +216,34 @@ export class VeiculosBiPage implements OnInit {
     const start = this.dataInicio();
     const end = this.dataFim();
     return this.vendasDiarias().filter((item) => item.data >= start && item.data <= end);
+  });
+  readonly acessoriosQuantidadeTotal = computed(() => this.acessorios().reduce((total, item) => total + item.quantidade, 0));
+  readonly acessoriosFaturamentoTotal = computed(() => this.acessorios().reduce((total, item) => total + item.faturamento, 0));
+  readonly acessoriosRentabilidadeTotal = computed(() => this.acessorios().reduce((total, item) => total + item.rentabilidade, 0));
+  readonly acessoriosTicketMedio = computed(() => this.acessoriosQuantidadeTotal() ? this.acessoriosFaturamentoTotal() / this.acessoriosQuantidadeTotal() : 0);
+  readonly acessoriosMargemPercentual = computed(() => this.acessoriosFaturamentoTotal() ? this.acessoriosRentabilidadeTotal() / this.acessoriosFaturamentoTotal() * 100 : 0);
+  readonly maxAcessorioFaturamento = computed(() => Math.max(...this.acessorios().map((item) => item.faturamento), 1));
+  readonly retornoContratos = computed(() => this.retornoFi()?.contratos ?? 0);
+  readonly retornoTotal = computed(() => this.retornoFi()?.retornoTotal ?? 0);
+  readonly retornoValorFinanciado = computed(() => this.retornoFi()?.valorFinanciado ?? 0);
+  readonly retornoValorVenda = computed(() => this.retornoFi()?.valorVenda ?? 0);
+  readonly retornoComissaoTotal = computed(() => this.retornoFi()?.comissaoTotal ?? 0);
+  readonly retornoTicketMedio = computed(() => this.retornoContratos() ? this.retornoTotal() / this.retornoContratos() : 0);
+  readonly retornoSobreFinanciado = computed(() => this.retornoValorFinanciado() ? this.retornoTotal() / this.retornoValorFinanciado() * 100 : 0);
+  readonly retornoSobreVenda = computed(() => this.retornoValorVenda() ? this.retornoValorFinanciado() / this.retornoValorVenda() * 100 : 0);
+  readonly maxRetornoFinanceira = computed(() => Math.max(...(this.retornoFi()?.financeiras ?? []).map((item) => item.retorno), 1));
+  readonly maxRetornoVendedor = computed(() => Math.max(...(this.retornoFi()?.vendedores ?? []).map((item) => item.retorno), 1));
+  readonly retornoFinanceiroSlices = computed<ChartSlice[]>(() => [
+    { label: 'Retorno', value: this.retornoTotal(), color: '#16a34a' },
+    { label: 'Financiado', value: Math.max(this.retornoValorFinanciado() - this.retornoTotal(), 0), color: '#2563eb' },
+  ]);
+  readonly retornoParcelasSlices = computed<ChartSlice[]>(() => {
+    const colors = ['#2563eb', '#16a34a', '#f59e0b', '#14b8a6', '#7c3aed', '#ef4444', '#64748b'];
+    return (this.retornoFi()?.parcelas ?? []).map((item, index) => ({
+      label: item.nome,
+      value: item.quantidade,
+      color: colors[index % colors.length],
+    }));
   });
 
   ngOnInit(): void {
@@ -221,30 +259,88 @@ export class VeiculosBiPage implements OnInit {
   loadEmpresas(): void {
     this.unidadesService.listEmpresas().subscribe({
       next: (empresas) => this.empresas.set(empresas),
-      error: () => this.empresas.set([]),
+      error: (error) => {
+        this.empresas.set([]);
+        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar as empresas.', error), 'B.I Veiculos');
+      },
     });
   }
 
   loadRevendas(): void {
     this.unidadesService.list().subscribe({
-      next: (revendas) => {
-        this.revendas.set(revendas);
-        this.rebuildDashboard();
+      next: (revendas) => this.revendas.set(revendas),
+      error: (error) => {
+        this.revendas.set([]);
+        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar as revendas.', error), 'B.I Veiculos');
       },
-      error: () => this.revendas.set([]),
     });
   }
 
   load(): void {
+    if (this.dataInicio() > this.dataFim()) {
+      this.toastr.warning('A data inicial nao pode ser maior que a data final.', 'Periodo invalido');
+      return;
+    }
+
     this.loading.set(true);
     void this.spinner.show();
-    window.setTimeout(() => {
-      this.rebuildDashboard();
-      this.loadAcessorios();
-      this.atualizadoEm.set(new Date().toISOString());
-      this.loading.set(false);
-      void this.spinner.hide();
-    }, 180);
+    this.veiculosBiService.loadDashboard(this.dashboardFilter()).subscribe({
+      next: (data) => {
+        this.applyDashboard(data);
+        this.loadAcessorios();
+        this.loadRetornoFi();
+        this.toastr.success('B.I de veiculos atualizado.', 'Atualizacao concluida');
+        this.loading.set(false);
+        void this.spinner.hide();
+      },
+      error: (error) => {
+        this.vendasFiliais.set([]);
+        this.vendasDiarias.set([]);
+        this.modelos.set([]);
+        this.vendedores.set([]);
+        this.acessorios.set([]);
+        this.retornoFi.set(null);
+        this.atualizadoEm.set(new Date().toISOString());
+        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar o B.I de veiculos.', error), 'Erro');
+        this.loading.set(false);
+        void this.spinner.hide();
+      },
+    });
+  }
+
+  private dashboardFilter(): { dataInicio: string; dataFim: string; empresa: number | null; revenda: number[] } {
+    return {
+      dataInicio: this.dataInicio(),
+      dataFim: this.dataFim(),
+      empresa: this.empresaNumero(),
+      revenda: this.revendasSelecionadas(),
+    };
+  }
+
+  private applyDashboard(data: VeiculosBiDashboard): void {
+    this.vendasFiliais.set(data.filiais ?? []);
+    this.vendasDiarias.set(data.vendasDiarias ?? []);
+    this.modelos.set(data.modelos ?? []);
+    this.vendedores.set(data.vendedores ?? []);
+    this.atualizadoEm.set(data.atualizadoEm || new Date().toISOString());
+  }
+
+  private defaultStartDate(): string {
+    const date = new Date();
+    date.setDate(1);
+    return this.toDateInputValue(date);
+  }
+
+  private defaultEndDate(): string {
+    return this.toDateInputValue(new Date());
+  }
+
+  private toDateInputValue(date: Date): string {
+    return [
+      date.getFullYear(),
+      String(date.getMonth() + 1).padStart(2, '0'),
+      String(date.getDate()).padStart(2, '0'),
+    ].join('-');
   }
 
   setEmpresa(value: string): void {
@@ -275,25 +371,33 @@ export class VeiculosBiPage implements OnInit {
     this.vendasPeriodoPage.set(Math.min(this.vendasPeriodoTotalPages(), this.vendasPeriodoPage() + 1));
   }
 
+  setTab(tab: VeiculosBiTab): void {
+    this.activeTab.set(tab);
+  }
+
   isRevendaSelected(numero: number): boolean {
     return this.revendasSelecionadas().includes(numero);
   }
 
   percent(value: number, max: number): number {
-    return Math.max(2, value / Math.max(max, 1) * 100);
+    return Math.min(100, Math.max(2, value / Math.max(max, 1) * 100));
   }
 
   towerHeight(value: number, max: number): number {
-    return value ? Math.max(4, value / Math.max(max, 1) * 100) : 0;
+    return value ? Math.min(100, Math.max(4, value / Math.max(max, 1) * 100)) : 0;
   }
 
   metaPercentual(meta: VendedorMeta): number {
     return meta.meta ? meta.realizado / meta.meta * 100 : 0;
   }
 
+  retornoPercentual(item: VeiculosBiRetornoFiGrupo): number {
+    return item.valorFinanciado ? item.retorno / item.valorFinanciado * 100 : 0;
+  }
+
   filialAtingimento(item: FilialVenda): number {
     const meta = item.metaNovos + item.metaVendaDireta;
-    return meta ? (item.faturadosNovos + item.faturadosDireta) / meta * 100 : 0;
+    return meta ? (item.faturadosNovos + item.faturadosDireta + item.seminovos) / meta * 100 : 0;
   }
 
   pieBackground(slices: ChartSlice[]): string {
@@ -410,8 +514,39 @@ export class VeiculosBiPage implements OnInit {
       revenda: this.revendasSelecionadas(),
     }).subscribe({
       next: (items) => this.acessorios.set(items),
-      error: () => this.acessorios.set([]),
+      error: (error) => {
+        this.acessorios.set([]);
+        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar os acessorios.', error), 'B.I Veiculos');
+      },
     });
+  }
+
+  private loadRetornoFi(): void {
+    this.veiculosBiService.loadRetornoFi(this.dashboardFilter()).subscribe({
+      next: (data) => this.retornoFi.set(data),
+      error: (error) => {
+        this.retornoFi.set(null);
+        this.toastr.error(this.getErrorMessage('Nao foi possivel carregar os retornos F&I.', error), 'B.I Veiculos');
+      },
+    });
+  }
+
+  private getErrorMessage(fallback: string, error: unknown): string {
+    if (typeof error === 'object' && error && 'error' in error) {
+      const body = (error as { error?: unknown }).error;
+      if (typeof body === 'string' && body.trim()) {
+        return body;
+      }
+
+      if (typeof body === 'object' && body && 'message' in body) {
+        const message = (body as { message?: unknown }).message;
+        if (typeof message === 'string' && message.trim()) {
+          return message;
+        }
+      }
+    }
+
+    return fallback;
   }
 
   private sourceRevendas(): Unidade[] {

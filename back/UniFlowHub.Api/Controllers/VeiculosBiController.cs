@@ -18,6 +18,18 @@ namespace UniFlowHub.Api.Controllers
             _service = service;
         }
 
+        [HttpGet("dashboard")]
+        public async Task<IActionResult> Dashboard([FromQuery] VeiculosBiFilterDto filter)
+        {
+            try
+            {
+                var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+                return Ok(await _service.LoadDashboardAsync(role, filter));
+            }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(StatusCodes.Status403Forbidden, ex.Message); }
+        }
+
         [HttpGet("acessorios")]
         public async Task<IActionResult> Acessorios([FromQuery] VeiculosBiFilterDto filter)
         {
@@ -25,6 +37,18 @@ namespace UniFlowHub.Api.Controllers
             {
                 var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
                 return Ok(await _service.LoadAcessoriosAsync(role, filter));
+            }
+            catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
+            catch (UnauthorizedAccessException ex) { return StatusCode(StatusCodes.Status403Forbidden, ex.Message); }
+        }
+
+        [HttpGet("retorno-fi")]
+        public async Task<IActionResult> RetornoFi([FromQuery] VeiculosBiFilterDto filter)
+        {
+            try
+            {
+                var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+                return Ok(await _service.LoadRetornoFiAsync(role, filter));
             }
             catch (InvalidOperationException ex) { return BadRequest(ex.Message); }
             catch (UnauthorizedAccessException ex) { return StatusCode(StatusCodes.Status403Forbidden, ex.Message); }
